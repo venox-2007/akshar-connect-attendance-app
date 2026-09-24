@@ -124,9 +124,74 @@ src/
 
 ---
 
+## 🛡️ Authorization & Role-Based Access Control (RBAC)
+
+The application enforces strict **Role-Based Access Control** at multiple architectural layers:
+
+1. **Route Level (`ProtectedRoute.tsx`)**:
+   - Unauthenticated visitors attempting to access `/admin/*` or `/teacher/*` are redirected to `/login`.
+   - Teachers attempting to access administrative routes (`/admin/*`) are blocked and automatically redirected to `/teacher/dashboard`.
+   - Administrators attempting to access teacher-specific routes are routed to `/admin/dashboard`.
+2. **UI & View Level**:
+   - Navigation links, action buttons (create/edit/delete student, manage teachers, edit classes) are strictly rendered according to permissions.
+   - `TakeAttendancePage` validates the `?classId` query parameter against the educator's assigned classes. Any unassigned class ID renders an **Access Denied** security barrier, preventing session initiation.
+3. **Service / Business Layer (`dataService.ts`)**:
+   - Permissions are not just cosmetically hidden; they are hard-enforced in every data service method via `requireAdmin()` and `requireClassAccess(classId)`.
+   - `AuthorizationError` is thrown whenever an unauthorized action or out-of-scope query is attempted.
+   - `getStudents()`, `getClasses()`, `getAttendance()` are automatically filtered to the logged-in teacher's assigned classes. Direct requests for other classes throw `AuthorizationError`.
+   - `saveAttendance()` strictly validates class assignment and asserts student roster membership before modifying records.
+   - Master data modifications (`createStudent`, `updateStudent`, `deleteStudent`, `createTeacher`, etc.) reject non-administrators with `AuthorizationError`.
+
+### Automated Security Test Matrix (14 Tests - 100% Pass Rate)
+
+| # | Security Test Case | Target / Role | Expected Result | Status |
+| :-: | :--- | :--- | :--- | :-: |
+| **1** | Access assigned class (`cls-1`) | Teacher (Riya Patil) | Allowed | ✅ **PASS** |
+| **2** | Access unassigned class (`cls-2`) | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **3** | View students of unassigned class (`cls-2`) | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **4** | Record attendance for unassigned class | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **5** | Modify existing attendance of unassigned class | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **6** | Navigate to administrative route (`/admin/dashboard`) | Teacher (Riya Patil) | Redirected & Service Denied | ✅ **PASS** |
+| **7** | Teacher management CRUD operations | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **8** | Create, edit, or delete student records | Teacher (Riya Patil) | `AuthorizationError` thrown | ✅ **PASS** |
+| **9** | URL query parameter or state tampering (`?classId=cls-2`) | Teacher (Riya Patil) | Access Denied Barrier & Service Denied | ✅ **PASS** |
+| **10** | Administrator universal class access | Administrator | Allowed (All classes accessible) | ✅ **PASS** |
+| **11** | Administrator universal student access | Administrator | Allowed (All students accessible) | ✅ **PASS** |
+| **12** | Administrator attendance modification | Administrator | Allowed (Any class) | ✅ **PASS** |
+| **13** | Unauthenticated access to `/admin/dashboard` | Guest / Anonymous | Redirected to `/login` | ✅ **PASS** |
+| **14** | Unauthenticated access to `/teacher/dashboard` | Guest / Anonymous | Redirected to `/login` | ✅ **PASS** |
+
+Run the automated security suite anytime with:
+```bash
+npm run test:security
+```
+
+---
+
+## 🔒 Client-Side Demo Storage Limitations & Production Backend Requirements
+
+### Current Demo Boundary
+In this first working demo, data is stored in the browser's `localStorage` and authorization rules are enforced in the client-side business layer (`dataService.ts`). While this provides complete end-to-end UX fidelity and robust in-browser data isolation during user sessions, client-side storage has fundamental security limitations:
+- Any user with browser developer tools can inspect or directly edit local storage keys.
+- Authorization checks execute in the client JavaScript runtime.
+
+### Future Production Backend Requirements
+When transitioning to production with **Supabase PostgreSQL** or **Firebase Firestore**, the following server-side security controls must be implemented:
+1. **Server-Side Authentication**:
+   - Secure HTTP-only session cookies or verified JWT Bearer tokens issued by Supabase Auth / Firebase Auth.
+2. **Database Row-Level Security (RLS)**:
+   - **Teachers**: PostgreSQL RLS policies (`auth.uid() = assigned_teacher_id`) ensuring the database engine itself rejects SQL queries for classes or students not assigned to the calling teacher.
+   - **Administrators**: RLS policy granting full `ALL` permissions to users with the `ADMIN` role claim in their JWT.
+3. **API Middleware & Cloud Functions**:
+   - Attendance submission endpoints (`/api/attendance`) must verify teacher assignment server-side before executing database transactions.
+4. **Audit Logging**:
+   - Immutable audit logs recording actor ID, IP address, timestamp, and changes made to attendance and student records.
+
+---
+
 ## 🔄 Future Backend Migration Plan
 
-The application was designed with clean architectural boundaries. React components **never** access the mock database directly.
+The application was designed with clean architectural boundaries. React components **never** access the storage or database directly.
 
 All UI components interact solely through `src/services/dataService.ts`:
 - `getTeachers()`, `createTeacher()`, `updateTeacher()`, `deleteTeacher()`
@@ -134,7 +199,7 @@ All UI components interact solely through `src/services/dataService.ts`:
 - `getStudents()`, `createStudent()`, `updateStudent()`, `deleteStudent()`
 - `getAttendance()`, `saveAttendance()`, `getDashboardStats()`
 
-When migrating to **Firebase Firestore** or **Supabase PostgreSQL** next week:
+When migrating to **Firebase Firestore** or **Supabase PostgreSQL**:
 1. Replace the internal method implementations inside `src/services/dataService.ts` and `src/services/authService.ts`.
 2. The UI components and pages require **zero** structural refactoring.
 

@@ -6,11 +6,20 @@ import {
   AttendanceStatus,
   DashboardStats,
   ClassAttendanceSummary,
-  AttendanceSummary
+  AttendanceSummary,
+  User
 } from '../types';
 import { getFreshMockDatabase, MockDatabaseState } from '../data/mockDatabase';
+import { authService } from './authService';
 
 const STORAGE_KEY = 'akshar_connect_records_v2';
+
+export class AuthorizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthorizationError';
+  }
+}
 
 class DataService {
   private loadData(): MockDatabaseState {
@@ -45,20 +54,88 @@ class DataService {
     return fresh;
   }
 
+  // ===================== AUTHORIZATION HELPERS =====================
+
+  public getCurrentUserOrThrow(): User {
+    const user = authService.getCurrentUser();
+    if (!user) {
+      throw new AuthorizationError('Authentication required: No active session found.');
+    }
+    return user;
+  }
+
+  public requireAdmin(): User {
+    const user = this.getCurrentUserOrThrow();
+    if (user.role !== 'ADMIN') {
+      throw new AuthorizationError('Access denied: Administrator privileges required for this operation.');
+    }
+    return user;
+  }
+
+  public requireClassAccess(classId: string): { user: User; isAdmin: boolean } {
+    const user = this.getCurrentUserOrThrow();
+    if (user.role === 'ADMIN') {
+      return { user, isAdmin: true };
+    }
+
+    if (user.role === 'TEACHER') {
+      if (!user.teacherId) {
+        throw new AuthorizationError('Access denied: User account is not linked to an educator profile.');
+      }
+
+      const data = this.loadData();
+      const cls = data.classes.find(c => c.id === classId);
+      if (!cls) {
+        throw new Error(`Class with ID "${classId}" not found.`);
+      }
+
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      const isAssigned =
+        (teacher && teacher.assignedClassIds.includes(classId)) ||
+        cls.assignedTeacherId === user.teacherId;
+
+      if (!isAssigned) {
+        throw new AuthorizationError(
+          `Access denied: Educator "${user.name}" is not assigned to class "${cls.name}" (${classId}).`
+        );
+      }
+
+      return { user, isAdmin: false };
+    }
+
+    throw new AuthorizationError('Access denied: Unauthorized role.');
+  }
+
   // ===================== TEACHERS CRUD =====================
 
+  /**
+   * Only Administrators may list all teachers.
+   */
   public async getTeachers(): Promise<Teacher[]> {
+    this.requireAdmin();
     const data = this.loadData();
     return [...data.teachers];
   }
 
+  /**
+   * Admin can view any teacher; Teachers may only view their own profile.
+   */
   public async getTeacherById(id: string): Promise<Teacher | null> {
+    const user = this.getCurrentUserOrThrow();
+    if (user.role === 'TEACHER' && user.teacherId !== id) {
+      throw new AuthorizationError('Access denied: Educators may only view their own profile.');
+    }
+
     const data = this.loadData();
     const teacher = data.teachers.find(t => t.id === id);
     return teacher ? { ...teacher } : null;
   }
 
+  /**
+   * Only Administrators may create teachers.
+   */
   public async createTeacher(teacherInput: Omit<Teacher, 'id'>): Promise<Teacher> {
+    this.requireAdmin();
     const data = this.loadData();
     const newId = `tch-${Date.now()}`;
     const newTeacher: Teacher = {
@@ -86,7 +163,11 @@ class DataService {
     return newTeacher;
   }
 
+  /**
+   * Only Administrators may update teachers.
+   */
   public async updateTeacher(id: string, updates: Partial<Omit<Teacher, 'id'>>): Promise<Teacher> {
+    this.requireAdmin();
     const data = this.loadData();
     const index = data.teachers.findIndex(t => t.id === id);
     if (index === -1) {
@@ -110,7 +191,6 @@ class DataService {
             assignedTeacherName: updated.name
           };
         } else if (cls.assignedTeacherId === updated.id) {
-          // Unassigned from this class
           return {
             ...cls,
             assignedTeacherId: null,
@@ -126,14 +206,17 @@ class DataService {
     return updated;
   }
 
+  /**
+   * Only Administrators may delete teachers.
+   */
   public async deleteTeacher(id: string): Promise<void> {
+    this.requireAdmin();
     const data = this.loadData();
     const teacherToDelete = data.teachers.find(t => t.id === id);
     if (!teacherToDelete) {
       throw new Error(`Teacher with id ${id} not found.`);
     }
 
-    // Clean up class associations: classes assigned to this teacher become unassigned
     data.classes = data.classes.map(cls => {
       if (cls.assignedTeacherId === id) {
         return {
@@ -151,16 +234,34 @@ class DataService {
 
   // ===================== CLASSES CRUD =====================
 
+  /**
+   * Admin can view all classes.
+   * Teachers only retrieve their assigned classes.
+   */
   public async getClasses(): Promise<ClassEntity[]> {
+    const user = this.getCurrentUserOrThrow();
     const data = this.loadData();
-    // Ensure student count reflects actual students in that class
-    return data.classes.map(cls => ({
+
+    let accessibleClasses = data.classes;
+    if (user.role === 'TEACHER') {
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      accessibleClasses = data.classes.filter(
+        c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id))
+      );
+    }
+
+    return accessibleClasses.map(cls => ({
       ...cls,
       studentCount: data.students.filter(s => s.classId === cls.id).length
     }));
   }
 
+  /**
+   * Admin can view any class.
+   * Teachers can only view class if assigned to it.
+   */
   public async getClassById(id: string): Promise<ClassEntity | null> {
+    this.requireClassAccess(id);
     const data = this.loadData();
     const cls = data.classes.find(c => c.id === id);
     if (!cls) return null;
@@ -170,7 +271,11 @@ class DataService {
     };
   }
 
+  /**
+   * Only Administrators may create classes.
+   */
   public async createClass(classInput: Omit<ClassEntity, 'id' | 'studentCount'>): Promise<ClassEntity> {
+    this.requireAdmin();
     const data = this.loadData();
     const newId = `cls-${Date.now()}`;
 
@@ -197,7 +302,11 @@ class DataService {
     return newClass;
   }
 
+  /**
+   * Only Administrators may update classes.
+   */
   public async updateClass(id: string, updates: Partial<Omit<ClassEntity, 'id' | 'studentCount'>>): Promise<ClassEntity> {
+    this.requireAdmin();
     const data = this.loadData();
     const index = data.classes.findIndex(c => c.id === id);
     if (index === -1) {
@@ -207,7 +316,6 @@ class DataService {
     const current = data.classes[index];
     let assignedTeacherName = current.assignedTeacherName;
 
-    // If teacher assignment changed
     if (updates.assignedTeacherId !== undefined) {
       const oldTeacherId = current.assignedTeacherId;
       const newTeacherId = updates.assignedTeacherId;
@@ -246,14 +354,17 @@ class DataService {
     return updated;
   }
 
+  /**
+   * Only Administrators may delete classes.
+   */
   public async deleteClass(id: string): Promise<void> {
+    this.requireAdmin();
     const data = this.loadData();
     const clsToDelete = data.classes.find(c => c.id === id);
     if (!clsToDelete) {
       throw new Error(`Class with id ${id} not found.`);
     }
 
-    // 1. Unassign from teacher
     data.teachers = data.teachers.map(teacher => {
       if (teacher.assignedClassIds.includes(id)) {
         return {
@@ -264,25 +375,59 @@ class DataService {
       return teacher;
     });
 
-    // 2. Cascade delete or unassign students & attendance for this class
     data.students = data.students.filter(s => s.classId !== id);
     data.attendance = data.attendance.filter(a => a.classId !== id);
-
-    // 3. Remove class
     data.classes = data.classes.filter(c => c.id !== id);
     this.saveData(data);
   }
 
   // ===================== STUDENTS CRUD =====================
 
+  /**
+   * Admin can view all students.
+   * Teachers can ONLY view students belonging to their assigned classes.
+   * If a teacher specifies a classId outside their assignment, throws AuthorizationError.
+   */
   public async getStudents(filter?: { classId?: string; search?: string }): Promise<Student[]> {
+    const user = this.getCurrentUserOrThrow();
     const data = this.loadData();
-    let result = [...data.students];
 
+    if (user.role === 'TEACHER') {
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      const teacherClassIds = data.classes
+        .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
+        .map(c => c.id);
+
+      // If teacher specifically requests a class, verify authorization
+      if (filter?.classId) {
+        if (!teacherClassIds.includes(filter.classId)) {
+          throw new AuthorizationError(
+            `Access denied: Educator "${user.name}" cannot view students of unassigned class (${filter.classId}).`
+          );
+        }
+      }
+
+      // Restrict all returned students strictly to teacher's assigned classes
+      let result = data.students.filter(s => teacherClassIds.includes(s.classId));
+      if (filter?.classId) {
+        result = result.filter(s => s.classId === filter.classId);
+      }
+      if (filter?.search) {
+        const q = filter.search.toLowerCase();
+        result = result.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.rollNumber.toLowerCase().includes(q) ||
+          (s.guardianName && s.guardianName.toLowerCase().includes(q))
+        );
+      }
+      return result;
+    }
+
+    // Administrator
+    let result = [...data.students];
     if (filter?.classId) {
       result = result.filter(s => s.classId === filter.classId);
     }
-
     if (filter?.search) {
       const q = filter.search.toLowerCase();
       result = result.filter(s =>
@@ -291,20 +436,33 @@ class DataService {
         (s.guardianName && s.guardianName.toLowerCase().includes(q))
       );
     }
-
     return result;
   }
 
+  /**
+   * Admin can view any student.
+   * Teacher may only view student if student is enrolled in their assigned class.
+   */
   public async getStudentById(id: string): Promise<Student | null> {
+    const user = this.getCurrentUserOrThrow();
     const data = this.loadData();
     const student = data.students.find(s => s.id === id);
-    return student ? { ...student } : null;
+    if (!student) return null;
+
+    if (user.role === 'TEACHER') {
+      this.requireClassAccess(student.classId);
+    }
+
+    return { ...student };
   }
 
+  /**
+   * Only Administrators may create students.
+   */
   public async createStudent(studentInput: Omit<Student, 'id'>): Promise<Student> {
+    this.requireAdmin();
     const data = this.loadData();
-    
-    // Verify class exists
+
     const classExists = data.classes.some(c => c.id === studentInput.classId);
     if (!classExists) {
       throw new Error('Assigned class does not exist.');
@@ -318,7 +476,6 @@ class DataService {
 
     data.students.push(newStudent);
 
-    // Update class student count
     const targetClass = data.classes.find(c => c.id === studentInput.classId);
     if (targetClass) {
       targetClass.studentCount = data.students.filter(s => s.classId === studentInput.classId).length;
@@ -328,7 +485,11 @@ class DataService {
     return newStudent;
   }
 
+  /**
+   * Only Administrators may update students.
+   */
   public async updateStudent(id: string, updates: Partial<Omit<Student, 'id'>>): Promise<Student> {
+    this.requireAdmin();
     const data = this.loadData();
     const index = data.students.findIndex(s => s.id === id);
     if (index === -1) {
@@ -343,7 +504,6 @@ class DataService {
 
     data.students[index] = updated;
 
-    // Update student counts if class changed
     if (updates.classId && updates.classId !== oldClassId) {
       data.classes.forEach(c => {
         c.studentCount = data.students.filter(s => s.classId === c.id).length;
@@ -354,7 +514,11 @@ class DataService {
     return updated;
   }
 
+  /**
+   * Only Administrators may delete students.
+   */
   public async deleteStudent(id: string): Promise<void> {
+    this.requireAdmin();
     const data = this.loadData();
     const student = data.students.find(s => s.id === id);
     if (!student) {
@@ -362,14 +526,9 @@ class DataService {
     }
 
     const classId = student.classId;
-
-    // Remove student
     data.students = data.students.filter(s => s.id !== id);
-
-    // Remove attendance records for this student
     data.attendance = data.attendance.filter(a => a.studentId !== id);
 
-    // Recalculate class student count
     const cls = data.classes.find(c => c.id === classId);
     if (cls) {
       cls.studentCount = data.students.filter(s => s.classId === classId).length;
@@ -380,14 +539,60 @@ class DataService {
 
   // ===================== ATTENDANCE =====================
 
+  /**
+   * Admin can view all attendance logs.
+   * Teachers can ONLY view attendance logs for their assigned classes.
+   * If a teacher specifies an unassigned classId, throws AuthorizationError.
+   */
   public async getAttendance(filter?: {
     classId?: string;
     date?: string;
     studentId?: string;
   }): Promise<AttendanceRecord[]> {
+    const user = this.getCurrentUserOrThrow();
     const data = this.loadData();
-    let records = [...data.attendance];
 
+    if (user.role === 'TEACHER') {
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      const teacherClassIds = data.classes
+        .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
+        .map(c => c.id);
+
+      // Verify specific class request
+      if (filter?.classId) {
+        if (!teacherClassIds.includes(filter.classId)) {
+          throw new AuthorizationError(
+            `Access denied: Educator "${user.name}" cannot view attendance of unassigned class (${filter.classId}).`
+          );
+        }
+      }
+
+      // If specific studentId is requested, verify student is in teacher's class
+      if (filter?.studentId) {
+        const student = data.students.find(s => s.id === filter.studentId);
+        if (!student || !teacherClassIds.includes(student.classId)) {
+          throw new AuthorizationError(
+            `Access denied: Educator "${user.name}" cannot view attendance for student not in their class.`
+          );
+        }
+      }
+
+      let records = data.attendance.filter(r => teacherClassIds.includes(r.classId));
+      if (filter?.classId) {
+        records = records.filter(r => r.classId === filter.classId);
+      }
+      if (filter?.date) {
+        records = records.filter(r => r.date === filter.date);
+      }
+      if (filter?.studentId) {
+        records = records.filter(r => r.studentId === filter.studentId);
+      }
+
+      return records.sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    // Administrator
+    let records = [...data.attendance];
     if (filter?.classId) {
       records = records.filter(r => r.classId === filter.classId);
     }
@@ -398,10 +603,15 @@ class DataService {
       records = records.filter(r => r.studentId === filter.studentId);
     }
 
-    // Sort newest date first
     return records.sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  /**
+   * Save or edit attendance.
+   * Admin can record attendance for any class.
+   * Teachers can ONLY record attendance for their assigned classes.
+   * Throws AuthorizationError if teacher tries to record/edit attendance for an unassigned class.
+   */
   public async saveAttendance(
     classId: string,
     date: string,
@@ -412,19 +622,30 @@ class DataService {
     if (!date) throw new Error('Date is required');
     if (!entries || entries.length === 0) throw new Error('No attendance records to save');
 
-    const data = this.loadData();
-    const nowIso = new Date().toISOString();
+    // Strict class-level authorization check
+    this.requireClassAccess(classId);
 
+    const data = this.loadData();
+
+    // Verify all students belong to this class
+    const invalidStudent = entries.find(e => {
+      const s = data.students.find(std => std.id === e.studentId);
+      return !s || s.classId !== classId;
+    });
+
+    if (invalidStudent) {
+      throw new Error(`Integrity error: Student "${invalidStudent.studentId}" does not belong to class "${classId}".`);
+    }
+
+    const nowIso = new Date().toISOString();
     const savedRecords: AttendanceRecord[] = [];
 
     entries.forEach(entry => {
-      // Find if record already exists for (studentId + classId + date)
       const existingIdx = data.attendance.findIndex(
         r => r.studentId === entry.studentId && r.classId === classId && r.date === date
       );
 
       if (existingIdx !== -1) {
-        // Update existing record (prevent duplicates)
         data.attendance[existingIdx] = {
           ...data.attendance[existingIdx],
           status: entry.status,
@@ -434,7 +655,6 @@ class DataService {
         };
         savedRecords.push(data.attendance[existingIdx]);
       } else {
-        // Create new record
         const newRecord: AttendanceRecord = {
           id: `att-${entry.studentId}-${date}-${Date.now().toString(36)}`,
           studentId: entry.studentId,
@@ -454,12 +674,25 @@ class DataService {
     return savedRecords;
   }
 
+  /**
+   * Only Administrators may delete attendance logs.
+   */
+  public async deleteAttendance(id: string): Promise<void> {
+    this.requireAdmin();
+    const data = this.loadData();
+    data.attendance = data.attendance.filter(a => a.id !== id);
+    this.saveData(data);
+  }
+
   // ===================== STATS & REPORTING =====================
 
+  /**
+   * Only Administrators may access organization-wide reports & analytics.
+   */
   public async getDashboardStats(): Promise<DashboardStats> {
+    this.requireAdmin();
     const data = this.loadData();
-    
-    // Format today as YYYY-MM-DD
+
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -470,7 +703,6 @@ class DataService {
     const totalClasses = data.classes.length;
     const totalTeachers = data.teachers.length;
 
-    // Today's attendance
     const todayRecords = data.attendance.filter(r => r.date === todayStr);
     const presentToday = todayRecords.filter(r => r.status === 'present').length;
     const absentToday = todayRecords.filter(r => r.status === 'absent').length;
@@ -484,7 +716,6 @@ class DataService {
       percentage: todayPercentage
     };
 
-    // Class breakdown for today
     const classBreakdown: ClassAttendanceSummary[] = data.classes.map(cls => {
       const clsStudents = data.students.filter(s => s.classId === cls.id);
       const clsTodayRecords = todayRecords.filter(r => r.classId === cls.id);
@@ -515,7 +746,29 @@ class DataService {
     };
   }
 
-  // Teacher-specific permissions & stats
+  /**
+   * Only Administrators may export organization-wide reports.
+   */
+  public async getOrganizationReports(): Promise<{
+    classes: ClassEntity[];
+    students: Student[];
+    attendance: AttendanceRecord[];
+  }> {
+    this.requireAdmin();
+    const data = this.loadData();
+    return {
+      classes: [...data.classes],
+      students: [...data.students],
+      attendance: [...data.attendance]
+    };
+  }
+
+  /**
+   * Teacher dashboard data:
+   * A teacher may ONLY retrieve their own scoped dashboard data.
+   * Passing another teacher's ID throws AuthorizationError.
+   * Admin may view any teacher's dashboard data.
+   */
   public async getTeacherDashboardData(teacherId: string): Promise<{
     teacher: Teacher | null;
     classes: ClassEntity[];
@@ -527,6 +780,13 @@ class DataService {
     };
     classSummaries: ClassAttendanceSummary[];
   }> {
+    const user = this.getCurrentUserOrThrow();
+    if (user.role === 'TEACHER' && user.teacherId !== teacherId) {
+      throw new AuthorizationError(
+        `Access denied: Educator "${user.name}" cannot view the dashboard of another educator (${teacherId}).`
+      );
+    }
+
     const data = this.loadData();
     const teacher = data.teachers.find(t => t.id === teacherId) || null;
     const teacherClasses = data.classes
@@ -584,7 +844,9 @@ class DataService {
     };
   }
 
-  // Teacher permission enforcement
+  /**
+   * Verifies if teacher has permission to access classId.
+   */
   public async canTeacherAccessClass(teacherId: string, classId: string): Promise<boolean> {
     const data = this.loadData();
     const teacher = data.teachers.find(t => t.id === teacherId);
