@@ -139,10 +139,12 @@ export const AdminDashboard: React.FC = () => {
             </p>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-2xl font-black text-slate-900 dark:text-white">
-                {stats.todayAttendance.percentage}%
+                {stats.todayAttendance.total > 0 ? `${stats.todayAttendance.percentage}%` : '0%'}
               </span>
-              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                {stats.todayAttendance.present} / {stats.todayAttendance.total}
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {stats.todayAttendance.total > 0
+                  ? `${stats.todayAttendance.present} / ${stats.todayAttendance.total}`
+                  : t('dashboard.noAttendanceToday')}
               </span>
             </div>
           </div>

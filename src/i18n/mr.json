@@ -23,11 +23,11 @@
     "welcomeBack": "पुन्हा स्वागत आहे",
     "signInSubtitle": "हजेरी व शैक्षणिक नोंदी व्यवस्थापित करण्यासाठी लॉगिन करा",
     "emailLabel": "ईमेल पत्ता",
-    "emailPlaceholder": "name@aksharconnect.demo",
+    "emailPlaceholder": "name@aksharpaaul.org",
     "passwordLabel": "पासवर्ड",
     "passwordPlaceholder": "आपला पासवर्ड टाका",
     "signInButton": "अक्षर कनेक्ट मध्ये प्रवेश करा",
-    "demoAccountsTitle": "डेमो खाती (एक क्लिक लॉगिन)",
+    "staffAccountsTitle": "जलद प्रवेश खाती",
     "adminAccount": "प्रशासक (Admin)",
     "teacherAccount": "शिक्षक (Teacher)",
     "loggingIn": "प्रवेश होत आहे...",
@@ -56,7 +56,8 @@
     "statusMarked": "आज नोंदवले",
     "statusPending": "अजून नोंदवले नाही",
     "takeAttendanceBtn": "हजेरी घ्या",
-    "viewHistoryBtn": "इतिहास पहा"
+    "viewHistoryBtn": "इतिहास पहा",
+    "noAttendanceToday": "आज अद्याप कोणतीही हजेरी नोंदवली गेलेली नाही"
   },
   "attendance": {
     "title": "वर्ग हजेरी",
@@ -89,7 +90,7 @@
     "status": "स्थिती",
     "markedBy": "नोंदवणाऱ्याचे नाव",
     "lastUpdated": "शेवटचे अद्यतन",
-    "noRecords": "कोणतीही हजेरी नोंद आढळली नाही.",
+    "noRecords": "अद्याप कोणतीही हजेरी नोंद आढळली नाही.",
     "editRecord": "स्थिती बदला"
   },
   "reports": {
@@ -103,7 +104,8 @@
     "trendOverTime": "मागील हजेरी इतिहास",
     "center": "अध्ययन केंद्र",
     "studentsCount": "विद्यार्थी",
-    "avgRate": "सरासरी प्रमाण"
+    "avgRate": "सरासरी प्रमाण",
+    "noLogsYet": "अद्याप कोणतीही हजेरी नोंदवलेली नाही"
   },
   "teachers": {
     "title": "शिक्षक व्यवस्थापन",
@@ -118,7 +120,7 @@
     "assignedClasses": "नेमून दिलेले वर्ग",
     "status": "स्थिती",
     "actions": "कृती",
-    "noTeachers": "कोणतेही शिक्षक आढळले नाहीत.",
+    "noTeachers": "निर्देशिकेत कोणतेही शिक्षक आढळले नाहीत.",
     "deleteConfirmTitle": "शिक्षकाला काढायचे आहे का?",
     "deleteConfirmDesc": "तुम्हाला खात्री आहे का की {name} यांना काढायचे आहे? त्यांचे नेमलेले वर्ग अनाबंटित होतील.",
     "createdSuccess": "शिक्षक यशस्वीरित्या जोडले गेले!",
@@ -181,10 +183,10 @@
     "male": "मुलगा",
     "female": "मुलगी",
     "other": "इतर",
-    "resetDemo": "डेमो डेटा रीसेट करा",
-    "resetConfirmTitle": "सर्व डेमो डेटा रीसेट करायचा का?",
-    "resetConfirmDesc": "यामुळे मूळ डेमो डेटा (४ शिक्षक, ४ वर्ग, १२० विद्यार्थी आणि हजेरी) पुन्हा सेट होईल. तुमचे सर्व बदल नष्ट होतील.",
-    "resetSuccess": "डेमो डेटा यशस्वीरित्या रीसेट झाला!",
+    "resetDemo": "माहिती पुनर्स्थापित करा",
+    "resetConfirmTitle": "सर्व केंद्र माहिती पूर्ववत करायची का?",
+    "resetConfirmDesc": "यामुळे मूळ केंद्र माहिती (४ शिक्षक, ४ वर्ग, १२० विद्यार्थी) पुन्हा सेट होईल. तुमचे नवीन बदल नष्ट होतील.",
+    "resetSuccess": "माहिती यशस्वीरित्या पुनर्स्थापित झाली!",
     "lightMode": "लाईट मोड",
     "darkMode": "डार्क मोड",
     "language": "भाषा",

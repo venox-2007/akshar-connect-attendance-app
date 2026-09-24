@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { getFreshMockDatabase, MockDatabaseState } from '../data/mockDatabase';
 
-const STORAGE_KEY = 'akshar_connect_db_v1';
+const STORAGE_KEY = 'akshar_connect_records_v2';
 
 class DataService {
   private loadData(): MockDatabaseState {

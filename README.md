@@ -64,23 +64,24 @@ This first complete working demo provides a frictionless, mobile-optimized exper
 - Custom brand palette featuring deep teal, emerald green, and dark neutrals.
 - Theme preference persists across browser refreshes.
 
-### 7. LocalStorage Persistence & Safe Factory Reset
-- All CRUD modifications (teachers, classes, students, attendance logs) persist in `localStorage`.
-- Includes a custom React confirmation modal to **Reset Demo Data** back to the initial 120-student benchmark at any time without native browser popups.
+### 7. LocalStorage Persistence
+- All master data and modifications (teachers, classes, students, attendance logs) persist in `localStorage`.
 
 ---
 
-## 🔐 Demo Credentials
+## 🔐 System Accounts
 
-Use the quick 1-click login buttons on the login screen or sign in with:
+Sign in with the standard credentials below:
 
 | Role | Email | Password | Assigned Standard / Center |
 | :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@aksharconnect.demo` | `admin123` | All Centers & Classes |
-| **Teacher (Riya Patil)** | `riya@aksharconnect.demo` | `teacher123` | Navchetna Std 3 (Dharavi) |
-| **Teacher (Vikram Kulkarni)** | `vikram@aksharconnect.demo` | `teacher123` | Prerana Std 4 (Govandi) |
-| **Teacher (Anita Sharma)** | `anita@aksharconnect.demo` | `teacher123` | Udaan Std 5 (Wadala) |
-| **Teacher (Suresh Pawar)** | `suresh@aksharconnect.demo` | `teacher123` | Sankalp Std 6 (Kurla) |
+| **Administrator** | `admin@aksharpaaul.org` | `admin123` | Full NGO Access (All Centers & Batches) |
+| **Teacher (Riya Patil)** | `riya.patil@aksharpaaul.org` | `teacher123` | Navchetna Std 3 (Dharavi Community Center) |
+| **Teacher (Vikram Kulkarni)** | `vikram.kulkarni@aksharpaaul.org` | `teacher123` | Prerana Std 4 (Govandi Uplift Center) |
+| **Teacher (Anita Sharma)** | `anita.sharma@aksharpaaul.org` | `teacher123` | Udaan Std 5 (Wadala Balwadi Center) |
+| **Teacher (Suresh Pawar)** | `suresh.pawar@aksharpaaul.org` | `teacher123` | Sankalp Std 6 (Kurla Literacy Hub) |
+
+*(Note: Legacy aliases like `admin@aksharconnect.demo` / `admin123` and `riya@aksharconnect.demo` / `teacher123` also work seamlessly).*
 
 ---
 

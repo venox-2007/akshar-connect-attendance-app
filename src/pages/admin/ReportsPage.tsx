@@ -258,9 +258,15 @@ export const ReportsPage: React.FC = () => {
                     {cls.total}
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                      {cls.percentage}%
-                    </span>
+                    {cls.total > 0 ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                        {cls.percentage}%
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 font-medium italic">
+                        {t('reports.noLogsYet')}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -276,36 +282,42 @@ export const ReportsPage: React.FC = () => {
           <span>{t('reports.trendOverTime')}</span>
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {dateBreakdown.slice(0, 5).map(item => (
-            <div
-              key={item.date}
-              className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between"
-            >
-              <div>
-                <span className="text-[11px] font-mono text-slate-400 block mb-1">
-                  {formatDateDisplay(item.date)}
-                </span>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xl font-black text-slate-900 dark:text-white">
-                    {item.rate}%
+        {dateBreakdown.length === 0 ? (
+          <p className="text-xs text-slate-500 italic py-4">
+            {t('reports.noLogsYet')}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {dateBreakdown.slice(0, 5).map(item => (
+              <div
+                key={item.date}
+                className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between"
+              >
+                <div>
+                  <span className="text-[11px] font-mono text-slate-400 block mb-1">
+                    {formatDateDisplay(item.date)}
                   </span>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    {item.present}/{item.total}
-                  </span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                      {item.rate}%
+                    </span>
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      {item.present}/{item.total}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mini bar */}
+                <div className="mt-3 h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-teal-500 rounded-full"
+                    style={{ width: `${item.rate}%` }}
+                  />
                 </div>
               </div>
-
-              {/* Mini bar */}
-              <div className="mt-3 h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-teal-500 rounded-full"
-                  style={{ width: `${item.rate}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

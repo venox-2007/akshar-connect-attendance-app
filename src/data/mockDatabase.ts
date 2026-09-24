@@ -1,9 +1,9 @@
 import { User, Teacher, ClassEntity, Student, AttendanceRecord } from '../types';
 
-export const DEMO_ADMIN: User = {
+export const INITIAL_ADMIN: User = {
   id: 'usr-admin-1',
   name: 'Dr. Anand Deshmukh',
-  email: 'admin@aksharconnect.demo',
+  email: 'admin@aksharpaaul.org',
   role: 'ADMIN',
   phone: '+91 98200 99887'
 };
@@ -12,7 +12,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: 'tch-1',
     name: 'Riya Patil',
-    email: 'riya@aksharconnect.demo',
+    email: 'riya.patil@aksharpaaul.org',
     phone: '+91 98201 12345',
     assignedClassIds: ['cls-1'],
     status: 'active',
@@ -22,7 +22,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: 'tch-2',
     name: 'Vikram Kulkarni',
-    email: 'vikram@aksharconnect.demo',
+    email: 'vikram.kulkarni@aksharpaaul.org',
     phone: '+91 98202 23456',
     assignedClassIds: ['cls-2'],
     status: 'active',
@@ -32,7 +32,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: 'tch-3',
     name: 'Anita Sharma',
-    email: 'anita@aksharconnect.demo',
+    email: 'anita.sharma@aksharpaaul.org',
     phone: '+91 98203 34567',
     assignedClassIds: ['cls-3'],
     status: 'active',
@@ -42,7 +42,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: 'tch-4',
     name: 'Suresh Pawar',
-    email: 'suresh@aksharconnect.demo',
+    email: 'suresh.pawar@aksharpaaul.org',
     phone: '+91 98204 45678',
     assignedClassIds: ['cls-4'],
     status: 'active',
@@ -154,11 +154,15 @@ export function generateInitialStudents(): Student[] {
   return students;
 }
 
+/**
+ * Generate a modest, legitimate sample of previous working day attendance for classes 1 & 2.
+ * Leaves today completely open and unrecorded so educators can immediately take today's attendance.
+ */
 export function generateInitialAttendance(students: Student[]): AttendanceRecord[] {
   const records: AttendanceRecord[] = [];
   const today = new Date();
   
-  // Format YYYY-MM-DD safely in local time
+  // Format YYYY-MM-DD
   const formatDate = (d: Date) => {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -166,30 +170,32 @@ export function generateInitialAttendance(students: Student[]): AttendanceRecord
     return `${year}-${month}-${day}`;
   };
 
-  const dates: string[] = [];
-  for (let i = 4; i >= 0; i--) {
+  // Find previous 2 working days (strictly excluding today, i >= 1)
+  const previousDates: string[] = [];
+  let daysBack = 1;
+  while (previousDates.length < 2 && daysBack < 10) {
     const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    // skip Sundays
-    if (d.getDay() !== 0) {
-      dates.push(formatDate(d));
+    d.setDate(today.getDate() - daysBack);
+    if (d.getDay() !== 0) { // skip Sunday
+      previousDates.push(formatDate(d));
     }
+    daysBack++;
   }
 
   // Teacher lookup map for classes
   const classTeacherMap: Record<string, string> = {
     'cls-1': 'Riya Patil',
-    'cls-2': 'Vikram Kulkarni',
-    'cls-3': 'Anita Sharma',
-    'cls-4': 'Suresh Pawar'
+    'cls-2': 'Vikram Kulkarni'
   };
 
-  dates.forEach((dateStr, dateIdx) => {
-    students.forEach((student, sIdx) => {
-      // Create realistic attendance pattern: ~88% present
-      // Certain students absent on certain days
-      const isAbsent = ((sIdx * 13 + dateIdx * 7) % 10) === 0 || (sIdx === 4 && dateIdx % 2 === 0);
-      const teacherName = classTeacherMap[student.classId] || 'Admin';
+  // Only seed historical attendance for cls-1 and cls-2, leaving cls-3 and cls-4 fresh
+  const historicalStudents = students.filter(s => s.classId === 'cls-1' || s.classId === 'cls-2');
+
+  previousDates.forEach((dateStr, dateIdx) => {
+    historicalStudents.forEach((student, sIdx) => {
+      // Natural 90% attendance pattern with legitimate reasons
+      const isAbsent = ((sIdx * 7 + dateIdx * 3) % 9) === 0;
+      const teacherName = classTeacherMap[student.classId] || 'Riya Patil';
 
       records.push({
         id: `att-${student.id}-${dateStr}`,
@@ -198,8 +204,8 @@ export function generateInitialAttendance(students: Student[]): AttendanceRecord
         date: dateStr,
         status: isAbsent ? 'absent' : 'present',
         markedBy: teacherName,
-        updatedAt: `${dateStr}T11:30:00.000Z`,
-        notes: isAbsent ? 'Informed leave or illness' : undefined
+        updatedAt: `${dateStr}T11:45:00.000Z`,
+        notes: isAbsent ? 'Family function or medical appointment' : undefined
       });
     });
   });
@@ -229,7 +235,7 @@ export function getFreshMockDatabase(): MockDatabaseState {
   }));
 
   return {
-    users: [DEMO_ADMIN, ...teacherUsers],
+    users: [INITIAL_ADMIN, ...teacherUsers],
     teachers: JSON.parse(JSON.stringify(INITIAL_TEACHERS)),
     classes: JSON.parse(JSON.stringify(INITIAL_CLASSES)),
     students,

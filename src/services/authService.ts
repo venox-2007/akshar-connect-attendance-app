@@ -1,13 +1,64 @@
 import { User } from '../types';
-import { DEMO_ADMIN, INITIAL_TEACHERS } from '../data/mockDatabase';
+import { INITIAL_ADMIN, INITIAL_TEACHERS } from '../data/mockDatabase';
 
-const SESSION_KEY = 'akshar_connect_session_v1';
+const SESSION_KEY = 'akshar_connect_auth_v2';
 
-// Preset credentials for demo
-const DEMO_CREDENTIALS: Record<string, { password: string; user: User }> = {
+// Standard accounts for authentication
+const REGISTERED_ACCOUNTS: Record<string, { password: string; user: User }> = {
+  // Production NGO Accounts
+  'admin@aksharpaaul.org': {
+    password: 'admin123',
+    user: INITIAL_ADMIN
+  },
+  'riya.patil@aksharpaaul.org': {
+    password: 'teacher123',
+    user: {
+      id: 'usr-tch-1',
+      name: INITIAL_TEACHERS[0].name,
+      email: INITIAL_TEACHERS[0].email,
+      role: 'TEACHER',
+      teacherId: INITIAL_TEACHERS[0].id,
+      phone: INITIAL_TEACHERS[0].phone
+    }
+  },
+  'vikram.kulkarni@aksharpaaul.org': {
+    password: 'teacher123',
+    user: {
+      id: 'usr-tch-2',
+      name: INITIAL_TEACHERS[1].name,
+      email: INITIAL_TEACHERS[1].email,
+      role: 'TEACHER',
+      teacherId: INITIAL_TEACHERS[1].id,
+      phone: INITIAL_TEACHERS[1].phone
+    }
+  },
+  'anita.sharma@aksharpaaul.org': {
+    password: 'teacher123',
+    user: {
+      id: 'usr-tch-3',
+      name: INITIAL_TEACHERS[2].name,
+      email: INITIAL_TEACHERS[2].email,
+      role: 'TEACHER',
+      teacherId: INITIAL_TEACHERS[2].id,
+      phone: INITIAL_TEACHERS[2].phone
+    }
+  },
+  'suresh.pawar@aksharpaaul.org': {
+    password: 'teacher123',
+    user: {
+      id: 'usr-tch-4',
+      name: INITIAL_TEACHERS[3].name,
+      email: INITIAL_TEACHERS[3].email,
+      role: 'TEACHER',
+      teacherId: INITIAL_TEACHERS[3].id,
+      phone: INITIAL_TEACHERS[3].phone
+    }
+  },
+
+  // Compatibility aliases
   'admin@aksharconnect.demo': {
     password: 'admin123',
-    user: DEMO_ADMIN
+    user: INITIAL_ADMIN
   },
   'riya@aksharconnect.demo': {
     password: 'teacher123',
@@ -70,7 +121,7 @@ class AuthService {
         this.currentUser = JSON.parse(stored);
       }
     } catch (e) {
-      console.error('Failed to restore session from localStorage', e);
+      console.error('Failed to restore session', e);
       this.currentUser = null;
     }
   }
@@ -84,14 +135,14 @@ class AuthService {
 
   public async login(email: string, password: string): Promise<User> {
     const normalizedEmail = email.trim().toLowerCase();
-    const account = DEMO_CREDENTIALS[normalizedEmail];
+    const account = REGISTERED_ACCOUNTS[normalizedEmail];
 
     if (!account) {
-      throw new Error('Invalid email or user not found. Check demo credentials.');
+      throw new Error('Invalid email or user account not found.');
     }
 
     if (account.password !== password) {
-      throw new Error('Invalid password. Please try again.');
+      throw new Error('Invalid password. Please check your credentials and try again.');
     }
 
     this.currentUser = account.user;
@@ -120,4 +171,4 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-export { DEMO_CREDENTIALS };
+export { REGISTERED_ACCOUNTS };

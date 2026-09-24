@@ -8,8 +8,7 @@ import {
   CalendarCheck,
   BarChart3,
   Clock,
-  Sparkles,
-  RotateCcw
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
@@ -17,10 +16,9 @@ import { useTranslation } from '../../i18n';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onResetDataRequest?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onResetDataRequest }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { role, user } = useAuth();
   const { t } = useTranslation();
 
@@ -105,21 +103,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onResetDataRe
 
         {/* Footer info in sidebar */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-          {/* Mobile reset button */}
-          {onResetDataRequest && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onResetDataRequest();
-              }}
-              className="sm:hidden w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{t('common.resetDemo')}</span>
-            </button>
-          )}
-
           <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
             <Sparkles className="w-3.5 h-3.5 text-teal-500 shrink-0" />
             <span className="text-[11px] leading-tight">

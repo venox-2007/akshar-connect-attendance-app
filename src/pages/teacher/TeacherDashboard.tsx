@@ -192,40 +192,51 @@ export const TeacherDashboard: React.FC = () => {
                   </div>
 
                   {/* Attendance Stats bar */}
-                  <div className="my-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] font-semibold uppercase">
-                        {t('attendance.totalStudents')}
+                  {item.isMarkedToday ? (
+                    <div className="my-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px] font-semibold uppercase">
+                          {t('attendance.totalStudents')}
+                        </span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">
+                          {item.totalStudents}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-600 dark:text-emerald-400 block text-[10px] font-semibold uppercase">
+                          {t('attendance.present')}
+                        </span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                          {item.presentCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-rose-600 dark:text-rose-400 block text-[10px] font-semibold uppercase">
+                          {t('attendance.absent')}
+                        </span>
+                        <span className="font-bold text-rose-700 dark:text-rose-300">
+                          {item.absentCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-teal-600 dark:text-teal-400 block text-[10px] font-semibold uppercase">
+                          {t('dashboard.attendanceRate')}
+                        </span>
+                        <span className="font-bold text-teal-700 dark:text-teal-300">
+                          {item.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="my-4 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 flex items-center justify-between text-xs">
+                      <span className="text-amber-800 dark:text-amber-300 font-medium">
+                        {t('dashboard.noAttendanceToday')}
                       </span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">
-                        {item.totalStudents}
+                      <span className="font-bold text-slate-600 dark:text-slate-400">
+                        {item.totalStudents} {t('classes.studentsCount').toLowerCase()}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-emerald-600 dark:text-emerald-400 block text-[10px] font-semibold uppercase">
-                        {t('attendance.present')}
-                      </span>
-                      <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                        {item.presentCount}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-rose-600 dark:text-rose-400 block text-[10px] font-semibold uppercase">
-                        {t('attendance.absent')}
-                      </span>
-                      <span className="font-bold text-rose-700 dark:text-rose-300">
-                        {item.absentCount}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-teal-600 dark:text-teal-400 block text-[10px] font-semibold uppercase">
-                        {t('dashboard.attendanceRate')}
-                      </span>
-                      <span className="font-bold text-teal-700 dark:text-teal-300">
-                        {item.percentage}%
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="pt-2">
