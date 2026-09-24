@@ -54,8 +54,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
 export const INITIAL_CLASSES: ClassEntity[] = [
   {
     id: 'cls-1',
-    name: 'Navchetna Standard 3',
-    grade: 'Standard 3',
+    name: '3-A',
+    grade: 'Class 3',
     learningCenter: 'Dharavi Community Center',
     assignedTeacherId: 'tch-1',
     assignedTeacherName: 'Riya Patil',
@@ -64,8 +64,8 @@ export const INITIAL_CLASSES: ClassEntity[] = [
   },
   {
     id: 'cls-2',
-    name: 'Prerana Standard 4',
-    grade: 'Standard 4',
+    name: '4-B',
+    grade: 'Class 4',
     learningCenter: 'Govandi Uplift Center',
     assignedTeacherId: 'tch-2',
     assignedTeacherName: 'Vikram Kulkarni',
@@ -74,8 +74,8 @@ export const INITIAL_CLASSES: ClassEntity[] = [
   },
   {
     id: 'cls-3',
-    name: 'Udaan Standard 5',
-    grade: 'Standard 5',
+    name: '5-A',
+    grade: 'Class 5',
     learningCenter: 'Wadala Balwadi Center',
     assignedTeacherId: 'tch-3',
     assignedTeacherName: 'Anita Sharma',
@@ -84,8 +84,8 @@ export const INITIAL_CLASSES: ClassEntity[] = [
   },
   {
     id: 'cls-4',
-    name: 'Sankalp Standard 6',
-    grade: 'Standard 6',
+    name: '7-A',
+    grade: 'Class 7',
     learningCenter: 'Kurla Literacy Hub',
     assignedTeacherId: 'tch-4',
     assignedTeacherName: 'Suresh Pawar',
@@ -119,10 +119,10 @@ const GUARDIAN_RELATIONS = ['Mother', 'Father', 'Uncle', 'Grandmother'];
 export function generateInitialStudents(): Student[] {
   const students: Student[] = [];
   const classConfigs = [
-    { classId: 'cls-1', prefix: 'NC3' },
-    { classId: 'cls-2', prefix: 'PR4' },
-    { classId: 'cls-3', prefix: 'UD5' },
-    { classId: 'cls-4', prefix: 'SK6' }
+    { classId: 'cls-1', prefix: '3A' },
+    { classId: 'cls-2', prefix: '4B' },
+    { classId: 'cls-3', prefix: '5A' },
+    { classId: 'cls-4', prefix: '7A' }
   ];
 
   classConfigs.forEach((cfg) => {

@@ -98,7 +98,7 @@ export const StudentsPage: React.FC = () => {
     setCurrentId(null);
     setName('');
     const defaultCls = classes[0];
-    const prefix = defaultCls?.grade?.includes('3') ? 'NC3' : 'STD';
+    const prefix = defaultCls?.name ? defaultCls.name.replace(/[^a-zA-Z0-9]/g, '') : '3A';
     setRollNumber(`${prefix}-${String(students.length + 1).padStart(2, '0')}`);
     setClassId(defaultCls ? defaultCls.id : '');
     setGender('male');
@@ -370,7 +370,7 @@ export const StudentsPage: React.FC = () => {
                   value={rollNumber}
                   onChange={e => setRollNumber(e.target.value)}
                   required
-                  placeholder="e.g. NC3-31"
+                  placeholder="e.g. 3A-31"
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
               </div>

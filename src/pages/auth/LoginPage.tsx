@@ -4,7 +4,6 @@ import { Shield, GraduationCap, Lock, Mail, ArrowRight, AlertCircle, HeartHandsh
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
 import { Logo } from '../../components/common/Logo';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
 import { LanguageSelector } from '../../components/common/LanguageSelector';
 import { useToast } from '../../hooks/useToast';
 
@@ -81,28 +80,28 @@ export const LoginPage: React.FC = () => {
     },
     {
       name: 'Riya Patil',
-      roleSubtitle: 'Teacher — Navchetna Std 3 (Dharavi)',
+      roleSubtitle: 'Teacher — 3-A (Dharavi)',
       email: 'riya.patil@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Vikram Kulkarni',
-      roleSubtitle: 'Teacher — Prerana Std 4 (Govandi)',
+      roleSubtitle: 'Teacher — 4-B (Govandi)',
       email: 'vikram.kulkarni@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Anita Sharma',
-      roleSubtitle: 'Teacher — Udaan Std 5 (Wadala)',
+      roleSubtitle: 'Teacher — 5-A (Wadala)',
       email: 'anita.sharma@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Suresh Pawar',
-      roleSubtitle: 'Teacher — Sankalp Std 6 (Kurla)',
+      roleSubtitle: 'Teacher — 7-A (Kurla)',
       email: 'suresh.pawar@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
@@ -110,30 +109,29 @@ export const LoginPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950/20 flex flex-col justify-between p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-emerald-50/30 flex flex-col justify-between p-4 sm:p-6 lg:p-8">
       {/* Header controls */}
       <div className="flex items-center justify-between max-w-5xl w-full mx-auto">
         <Logo size="sm" showSubtitle={true} className="sm:hidden" />
         <Logo size="md" showSubtitle={true} className="hidden sm:flex" />
         <div className="flex items-center gap-2">
           <LanguageSelector />
-          <ThemeToggle />
         </div>
       </div>
 
       {/* Main Container */}
       <div className="max-w-md w-full mx-auto my-6">
-        <div className="bg-white dark:bg-slate-850 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-200/80">
           {/* Centered Brand Presentation */}
           <div className="mb-6">
             <Logo size="lg" stacked={true} showSubtitle={true} />
           </div>
 
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">
               {t('auth.welcomeBack')}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {t('auth.signInSubtitle')}
             </p>
           </div>

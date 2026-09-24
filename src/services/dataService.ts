@@ -12,7 +12,7 @@ import {
 import { getFreshMockDatabase, MockDatabaseState } from '../data/mockDatabase';
 import { authService } from './authService';
 
-const STORAGE_KEY = 'akshar_connect_records_v2';
+const STORAGE_KEY = 'akshar_connect_records_v4';
 
 export class AuthorizationError extends Error {
   constructor(message: string) {
@@ -30,6 +30,13 @@ class DataService {
       }
       const parsed = JSON.parse(serialized) as MockDatabaseState;
       if (!parsed.teachers || !parsed.classes || !parsed.students || !parsed.attendance) {
+        return this.resetData();
+      }
+      // Migrate legacy class names if present
+      const hasLegacyNames = parsed.classes.some(c =>
+        c.name.includes('Navchetna') || c.name.includes('Standard')
+      );
+      if (hasLegacyNames) {
         return this.resetData();
       }
       return parsed;

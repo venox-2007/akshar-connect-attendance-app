@@ -93,4 +93,3 @@ export interface DashboardStats {
 }
 
 export type Language = 'en' | 'hi' | 'mr';
-export type Theme = 'light' | 'dark';

@@ -188,8 +188,6 @@
     "resetConfirmTitle": "Restore Initial Directory Data?",
     "resetConfirmDesc": "This will reset the learning center directory back to the initial 4 classes, teachers, and enrolled students. Any custom modifications will be reverted.",
     "resetSuccess": "Directory data restored successfully.",
-    "lightMode": "Light Mode",
-    "darkMode": "Dark Mode",
     "language": "Language",
     "all": "All",
     "unassigned": "Unassigned",

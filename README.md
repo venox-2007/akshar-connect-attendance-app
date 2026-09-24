@@ -73,13 +73,13 @@ This first complete working demo provides a frictionless, mobile-optimized exper
 
 Sign in with the standard credentials below:
 
-| Role | Email | Password | Assigned Standard / Center |
+| Role | Email | Password | Assigned Class / Center |
 | :--- | :--- | :--- | :--- |
 | **Administrator** | `admin@aksharpaaul.org` | `admin123` | Full NGO Access (All Centers & Batches) |
-| **Teacher (Riya Patil)** | `riya.patil@aksharpaaul.org` | `teacher123` | Navchetna Std 3 (Dharavi Community Center) |
-| **Teacher (Vikram Kulkarni)** | `vikram.kulkarni@aksharpaaul.org` | `teacher123` | Prerana Std 4 (Govandi Uplift Center) |
-| **Teacher (Anita Sharma)** | `anita.sharma@aksharpaaul.org` | `teacher123` | Udaan Std 5 (Wadala Balwadi Center) |
-| **Teacher (Suresh Pawar)** | `suresh.pawar@aksharpaaul.org` | `teacher123` | Sankalp Std 6 (Kurla Literacy Hub) |
+| **Teacher (Riya Patil)** | `riya.patil@aksharpaaul.org` | `teacher123` | 3-A (Dharavi Community Center) |
+| **Teacher (Vikram Kulkarni)** | `vikram.kulkarni@aksharpaaul.org` | `teacher123` | 4-B (Govandi Uplift Center) |
+| **Teacher (Anita Sharma)** | `anita.sharma@aksharpaaul.org` | `teacher123` | 5-A (Wadala Balwadi Center) |
+| **Teacher (Suresh Pawar)** | `suresh.pawar@aksharpaaul.org` | `teacher123` | 7-A (Kurla Literacy Hub) |
 
 *(Note: Legacy aliases like `admin@aksharconnect.demo` / `admin123` and `riya@aksharconnect.demo` / `teacher123` also work seamlessly).*
 

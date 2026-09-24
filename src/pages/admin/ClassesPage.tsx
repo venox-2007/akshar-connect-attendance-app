@@ -37,7 +37,7 @@ export const ClassesPage: React.FC = () => {
 
   // Form Fields
   const [name, setName] = useState('');
-  const [grade, setGrade] = useState('Standard 3');
+  const [grade, setGrade] = useState('Class 3');
   const [learningCenter, setLearningCenter] = useState('Dharavi Community Center');
   const [assignedTeacherId, setAssignedTeacherId] = useState<string>('');
   const [schedule, setSchedule] = useState('Mon - Fri (09:00 AM - 01:00 PM)');
@@ -81,7 +81,7 @@ export const ClassesPage: React.FC = () => {
     setIsEditing(false);
     setCurrentId(null);
     setName('');
-    setGrade('Standard 3');
+    setGrade('Class 3');
     setLearningCenter('Dharavi Community Center');
     setAssignedTeacherId(teachers.length > 0 ? teachers[0].id : '');
     setSchedule('Mon - Fri (09:00 AM - 01:00 PM)');
@@ -306,7 +306,7 @@ export const ClassesPage: React.FC = () => {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
-                placeholder="e.g. Vikas Standard 3"
+                placeholder="e.g. 3-A"
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
               />
             </div>
@@ -321,7 +321,7 @@ export const ClassesPage: React.FC = () => {
                   value={grade}
                   onChange={e => setGrade(e.target.value)}
                   required
-                  placeholder="e.g. Standard 3"
+                  placeholder="e.g. Class 3"
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
               </div>
