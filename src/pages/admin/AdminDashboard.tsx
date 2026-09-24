@@ -53,7 +53,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-800 via-teal-700 to-emerald-700 p-6 sm:p-8 text-white shadow-xl shadow-teal-900/10">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-800 via-teal-700 to-emerald-700 p-6 sm:p-8 text-white shadow-xl shadow-teal-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 backdrop-blur-md text-teal-100 mb-3 border border-white/10">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -65,6 +65,11 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-xs sm:text-sm text-teal-100 mt-2 leading-relaxed max-w-xl">
             Monitor real-time student attendance across all 4 learning centers, manage teachers, and review NGO progress.
           </p>
+        </div>
+        <div className="relative z-10 hidden sm:flex shrink-0">
+          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 shadow-lg border border-white/20 flex items-center justify-center">
+            <img src="/logo.png" alt="Akshar Paaul Logo" className="w-full h-full object-contain" />
+          </div>
         </div>
         <div className="absolute -right-8 -bottom-8 w-56 h-56 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
       </div>

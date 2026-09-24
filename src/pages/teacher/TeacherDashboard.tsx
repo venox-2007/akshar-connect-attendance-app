@@ -66,7 +66,7 @@ export const TeacherDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 p-6 sm:p-8 text-white shadow-lg shadow-teal-700/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 p-6 sm:p-8 text-white shadow-lg shadow-teal-700/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="relative z-10 max-w-2xl">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-teal-50 mb-3">
             Akshar Paaul Educational NGO &bull; {t('roles.TEACHER')}
@@ -77,6 +77,11 @@ export const TeacherDashboard: React.FC = () => {
           <p className="text-sm sm:text-base text-teal-100 mt-2 leading-relaxed">
             Record attendance quickly and monitor your learning center children today.
           </p>
+        </div>
+        <div className="relative z-10 hidden sm:flex shrink-0">
+          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 shadow-lg border border-white/20 flex items-center justify-center">
+            <img src="/logo.png" alt="Akshar Paaul Logo" className="w-full h-full object-contain" />
+          </div>
         </div>
         {/* Decorative circle */}
         <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />

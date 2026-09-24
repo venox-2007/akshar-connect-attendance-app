@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Shield, GraduationCap, Lock, Mail, ArrowRight, AlertCircle, HeartHandshake, ChevronDown } from 'lucide-react';
+import { Shield, GraduationCap, Lock, Mail, ArrowRight, AlertCircle, HeartHandshake, Zap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
 import { Logo } from '../../components/common/Logo';
@@ -15,11 +15,10 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('admin@aksharpaaul.org');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showQuickAccess, setShowQuickAccess] = useState(false);
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -50,10 +49,9 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleSelectAccount = (accountEmail: string, accountPass: string) => {
+  const handleQuickLogin = (accountEmail: string, accountPass: string) => {
     setEmail(accountEmail);
     setPassword(accountPass);
-    // Auto-login on selection
     setTimeout(async () => {
       setLoading(true);
       setErrorMessage('');
@@ -73,11 +71,50 @@ export const LoginPage: React.FC = () => {
     }, 50);
   };
 
+  const quickAccounts = [
+    {
+      name: 'Administrator',
+      roleSubtitle: 'Full Management Access',
+      email: 'admin@aksharpaaul.org',
+      pass: 'admin123',
+      isAdmin: true
+    },
+    {
+      name: 'Riya Patil',
+      roleSubtitle: 'Teacher — Navchetna Std 3 (Dharavi)',
+      email: 'riya.patil@aksharpaaul.org',
+      pass: 'teacher123',
+      isAdmin: false
+    },
+    {
+      name: 'Vikram Kulkarni',
+      roleSubtitle: 'Teacher — Prerana Std 4 (Govandi)',
+      email: 'vikram.kulkarni@aksharpaaul.org',
+      pass: 'teacher123',
+      isAdmin: false
+    },
+    {
+      name: 'Anita Sharma',
+      roleSubtitle: 'Teacher — Udaan Std 5 (Wadala)',
+      email: 'anita.sharma@aksharpaaul.org',
+      pass: 'teacher123',
+      isAdmin: false
+    },
+    {
+      name: 'Suresh Pawar',
+      roleSubtitle: 'Teacher — Sankalp Std 6 (Kurla)',
+      email: 'suresh.pawar@aksharpaaul.org',
+      pass: 'teacher123',
+      isAdmin: false
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950/20 flex flex-col justify-between p-4 sm:p-6 lg:p-8">
       {/* Header controls */}
-      <div className="flex items-center justify-between max-w-6xl w-full mx-auto">
-        <Logo size="md" />
+      <div className="flex items-center justify-between max-w-5xl w-full mx-auto">
+        <Logo size="sm" showSubtitle={true} className="sm:hidden" />
+        <Logo size="md" showSubtitle={true} className="hidden sm:flex" />
         <div className="flex items-center gap-2">
           <LanguageSelector />
           <ThemeToggle />
@@ -85,13 +122,18 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Main Container */}
-      <div className="max-w-md w-full mx-auto my-8">
+      <div className="max-w-md w-full mx-auto my-6">
         <div className="bg-white dark:bg-slate-850 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800">
+          {/* Centered Brand Presentation */}
+          <div className="mb-6">
+            <Logo size="lg" stacked={true} showSubtitle={true} />
+          </div>
+
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               {t('auth.welcomeBack')}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {t('auth.signInSubtitle')}
             </p>
           </div>
@@ -103,7 +145,7 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
+          {/* Normal Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -161,68 +203,51 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Discreet Quick Selection Accordion (kept subtle and neutrally worded) */}
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setShowQuickAccess(!showQuickAccess)}
-              className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors py-1"
-            >
-              <span>{t('auth.staffAccountsTitle')}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showQuickAccess ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showQuickAccess && (
-              <div className="mt-3 space-y-2 animate-in fade-in duration-200">
-                {/* Admin button */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectAccount('admin@aksharpaaul.org', 'admin123')}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-teal-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-left transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 flex items-center justify-center">
-                      <Shield className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 dark:text-white">
-                        Dr. Anand Deshmukh
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-mono">
-                        admin@aksharpaaul.org
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400">
-                    Admin
-                  </span>
-                </button>
-
-                {/* Teacher button */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectAccount('riya.patil@aksharpaaul.org', 'teacher123')}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-left transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 dark:text-white">
-                        Riya Patil
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-mono">
-                        riya.patil@aksharpaaul.org
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    Teacher (Std 3)
-                  </span>
-                </button>
+          {/* Quick Login Section */}
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  {t('auth.quickLogin')}
+                </span>
               </div>
-            )}
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                {t('auth.quickLoginSubtitle')}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {quickAccounts.map(account => (
+                <button
+                  key={account.email}
+                  type="button"
+                  onClick={() => handleQuickLogin(account.email, account.pass)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 hover:bg-teal-50/70 dark:bg-slate-900/60 dark:hover:bg-slate-800 transition-colors text-left group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                      account.isAdmin
+                        ? 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300'
+                        : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                    }`}>
+                      {account.isAdmin ? <Shield className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors truncate">
+                        {account.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {account.roleSubtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400 group-hover:text-teal-600 dark:group-hover:text-teal-400 shrink-0 ml-2">
+                    Sign in &rarr;
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

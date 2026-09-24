@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
+import { Logo } from '../common/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,6 +59,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         }`}
       >
         <div className="px-4 py-6 overflow-y-auto flex-1 space-y-6">
+          {/* Mobile-only logo view at top of drawer */}
+          <div className="md:hidden pb-4 border-b border-slate-100 dark:border-slate-800">
+            <Logo size="sm" showSubtitle={true} />
+          </div>
+
           {/* User badge */}
           <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950/40 dark:to-emerald-950/20 border border-teal-100 dark:border-teal-900/50">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">

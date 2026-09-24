@@ -1,4 +1,4 @@
-import { User, Teacher, ClassEntity, Student, AttendanceRecord } from '../types';
+import type { User, Teacher, ClassEntity, Student, AttendanceRecord } from '../types';
 
 export const INITIAL_ADMIN: User = {
   id: 'usr-admin-1',
