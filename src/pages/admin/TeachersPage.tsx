@@ -405,7 +405,7 @@ export const TeachersPage: React.FC = () => {
                       {cls.name}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      ({cls.learningCenter})
+                      ({cls.grade})
                     </span>
                   </label>
                 ))}

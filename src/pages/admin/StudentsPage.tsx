@@ -291,7 +291,7 @@ export const StudentsPage: React.FC = () => {
                           {cls?.name || student.classId}
                         </span>
                         <span className="block text-[10px] text-slate-400">
-                          {cls?.learningCenter}
+                          {cls?.grade}
                         </span>
                       </td>
                       <td className="py-3 px-4 hidden md:table-cell capitalize text-slate-600 dark:text-slate-400">

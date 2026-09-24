@@ -12,9 +12,9 @@
 
 ## 🌟 Overview & Purpose
 
-**Akshar Connect** is an attendance and student records management web application tailored for educational NGOs and community learning centers.
+**Akshar Connect** is an attendance and student records management web application tailored for educational NGOs and schools.
 
-Operating across community hubs in Maharashtra (such as Dharavi, Govandi, Wadala, and Kurla), **Akshar Paaul Educational NGO** supports underprivileged children with fundamental literacy, numeracy, and holistic educational programs.
+**Akshar Paaul Educational NGO** supports underprivileged children with fundamental literacy, numeracy, and holistic educational programs.
 
 This first complete working demo provides a frictionless, mobile-optimized experience for daily field use by volunteer teachers, along with comprehensive administrative oversight, class assignment tracking, historical search, and CSV analytics export.
 
@@ -24,7 +24,7 @@ This first complete working demo provides a frictionless, mobile-optimized exper
 
 ### 1. Dual Role Architecture
 - **Administrator Role**:
-  - Full management of educators, learning centers, and classes.
+  - Full management of educators and classes.
   - Complete student directory with 120+ pre-seeded student records.
   - Multi-class attendance recording and past record corrections.
   - Comprehensive reports, class performance breakdown, date trends, and CSV exports.
@@ -60,9 +60,8 @@ This first complete working demo provides a frictionless, mobile-optimized exper
 - Centralized JSON dictionaries (`src/i18n/`) with persistent language selection stored in `localStorage`.
 
 ### 6. Theme System
-- Full **Light Mode** and **Dark Mode** support.
-- Custom brand palette featuring deep teal, emerald green, and dark neutrals.
-- Theme preference persists across browser refreshes.
+- Enforced clean **Light Mode** matching brand identity.
+- Custom brand palette featuring deep teal, emerald green, and crisp neutrals.
 
 ### 7. LocalStorage Persistence
 - All master data and modifications (teachers, classes, students, attendance logs) persist in `localStorage`.
@@ -73,13 +72,13 @@ This first complete working demo provides a frictionless, mobile-optimized exper
 
 Sign in with the standard credentials below:
 
-| Role | Email | Password | Assigned Class / Center |
+| Role | Email | Password | Assigned Class |
 | :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@aksharpaaul.org` | `admin123` | Full NGO Access (All Centers & Batches) |
-| **Teacher (Riya Patil)** | `riya.patil@aksharpaaul.org` | `teacher123` | 3-A (Dharavi Community Center) |
-| **Teacher (Vikram Kulkarni)** | `vikram.kulkarni@aksharpaaul.org` | `teacher123` | 4-B (Govandi Uplift Center) |
-| **Teacher (Anita Sharma)** | `anita.sharma@aksharpaaul.org` | `teacher123` | 5-A (Wadala Balwadi Center) |
-| **Teacher (Suresh Pawar)** | `suresh.pawar@aksharpaaul.org` | `teacher123` | 7-A (Kurla Literacy Hub) |
+| **Administrator** | `admin@aksharpaaul.org` | `admin123` | Full Access (All Classes) |
+| **Teacher (Riya Patil)** | `riya.patil@aksharpaaul.org` | `teacher123` | 3-A |
+| **Teacher (Vikram Kulkarni)** | `vikram.kulkarni@aksharpaaul.org` | `teacher123` | 4-B |
+| **Teacher (Anita Sharma)** | `anita.sharma@aksharpaaul.org` | `teacher123` | 5-A |
+| **Teacher (Suresh Pawar)** | `suresh.pawar@aksharpaaul.org` | `teacher123` | 7-A |
 
 *(Note: Legacy aliases like `admin@aksharconnect.demo` / `admin123` and `riya@aksharconnect.demo` / `teacher123` also work seamlessly).*
 

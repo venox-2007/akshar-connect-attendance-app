@@ -80,28 +80,28 @@ export const LoginPage: React.FC = () => {
     },
     {
       name: 'Riya Patil',
-      roleSubtitle: 'Teacher — 3-A (Dharavi)',
+      roleSubtitle: 'Teacher — 3-A',
       email: 'riya.patil@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Vikram Kulkarni',
-      roleSubtitle: 'Teacher — 4-B (Govandi)',
+      roleSubtitle: 'Teacher — 4-B',
       email: 'vikram.kulkarni@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Anita Sharma',
-      roleSubtitle: 'Teacher — 5-A (Wadala)',
+      roleSubtitle: 'Teacher — 5-A',
       email: 'anita.sharma@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false
     },
     {
       name: 'Suresh Pawar',
-      roleSubtitle: 'Teacher — 7-A (Kurla)',
+      roleSubtitle: 'Teacher — 7-A',
       email: 'suresh.pawar@aksharpaaul.org',
       pass: 'teacher123',
       isAdmin: false

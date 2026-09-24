@@ -87,10 +87,6 @@ export const MyClassesPage: React.FC = () => {
               </div>
 
               <div className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>{cls.learningCenter}</span>
-                </div>
                 {cls.schedule && (
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
@@ -133,7 +129,7 @@ export const MyClassesPage: React.FC = () => {
           isOpen={!!selectedClassForRoster}
           onClose={() => setSelectedClassForRoster(null)}
           title={`Class Roster - ${selectedClassForRoster.name}`}
-          subtitle={`${selectedClassForRoster.learningCenter} • ${rosterStudents.length} Students`}
+          subtitle={`${selectedClassForRoster.grade} • ${rosterStudents.length} Students`}
           maxWidth="2xl"
         >
           {rosterLoading ? (

@@ -28,8 +28,8 @@ export interface Teacher {
 export interface ClassEntity {
   id: string;
   name: string;
-  grade: string; // e.g. "Grade 3", "Primary 2", "Standard 5"
-  learningCenter: string; // e.g. "Dharavi Learning Center", "Ghatkopar Center", "Shivaji Nagar Center"
+  grade: string; // e.g. "Class 3", "Class 4", etc.
+  learningCenter?: string;
   assignedTeacherId: string | null;
   assignedTeacherName: string | null;
   studentCount: number;
@@ -75,7 +75,7 @@ export interface AttendanceSummary {
 export interface ClassAttendanceSummary {
   classId: string;
   className: string;
-  learningCenter: string;
+  learningCenter?: string;
   totalStudents: number;
   markedStudents: number;
   presentCount: number;

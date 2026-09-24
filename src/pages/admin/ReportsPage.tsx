@@ -228,7 +228,6 @@ export const ReportsPage: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">{t('classes.name')}</th>
-                <th className="py-3 px-4">{t('reports.center')}</th>
                 <th className="py-3 px-4">{t('classes.assignedTeacher')}</th>
                 <th className="py-3 px-4 text-center">{t('attendance.present')}</th>
                 <th className="py-3 px-4 text-center">{t('attendance.absent')}</th>
@@ -241,9 +240,6 @@ export const ReportsPage: React.FC = () => {
                 <tr key={cls.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                     {cls.name} ({cls.grade})
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
-                    {cls.learningCenter}
                   </td>
                   <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
                     {cls.assignedTeacherName || '-'}

@@ -343,7 +343,7 @@ export const AttendanceHistoryPage: React.FC = () => {
                           {cls?.name || rec.classId}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {cls?.learningCenter}
+                          {cls?.grade}
                         </div>
                       </td>
                       <td className="py-3 px-4">

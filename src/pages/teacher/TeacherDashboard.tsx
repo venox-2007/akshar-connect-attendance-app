@@ -179,9 +179,6 @@ export const TeacherDashboard: React.FC = () => {
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">
                         {item.className}
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {item.learningCenter}
-                      </p>
                     </div>
                     {item.isMarkedToday ? (
                       <Badge variant="success">

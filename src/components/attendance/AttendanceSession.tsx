@@ -201,7 +201,7 @@ export const AttendanceSession: React.FC<AttendanceSessionProps> = ({
             >
               {allowedClasses.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name} — {c.learningCenter}
+                  {c.name}
                 </option>
               ))}
             </select>

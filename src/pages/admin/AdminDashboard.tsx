@@ -229,9 +229,6 @@ export const AdminDashboard: React.FC = () => {
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       {cls.className}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {cls.learningCenter}
-                    </p>
                   </div>
                   {cls.isMarkedToday ? (
                     <Badge variant="success">

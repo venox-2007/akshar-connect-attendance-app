@@ -38,7 +38,7 @@ export const ClassesPage: React.FC = () => {
   // Form Fields
   const [name, setName] = useState('');
   const [grade, setGrade] = useState('Class 3');
-  const [learningCenter, setLearningCenter] = useState('Dharavi Community Center');
+  const [learningCenter, setLearningCenter] = useState('');
   const [assignedTeacherId, setAssignedTeacherId] = useState<string>('');
   const [schedule, setSchedule] = useState('Mon - Fri (09:00 AM - 01:00 PM)');
 
@@ -71,7 +71,6 @@ export const ClassesPage: React.FC = () => {
     return classes.filter(
       c =>
         c.name.toLowerCase().includes(q) ||
-        c.learningCenter.toLowerCase().includes(q) ||
         c.grade.toLowerCase().includes(q) ||
         (c.assignedTeacherName && c.assignedTeacherName.toLowerCase().includes(q))
     );
@@ -82,7 +81,7 @@ export const ClassesPage: React.FC = () => {
     setCurrentId(null);
     setName('');
     setGrade('Class 3');
-    setLearningCenter('Dharavi Community Center');
+    setLearningCenter('');
     setAssignedTeacherId(teachers.length > 0 ? teachers[0].id : '');
     setSchedule('Mon - Fri (09:00 AM - 01:00 PM)');
     setModalOpen(true);
@@ -93,7 +92,7 @@ export const ClassesPage: React.FC = () => {
     setCurrentId(cls.id);
     setName(cls.name);
     setGrade(cls.grade);
-    setLearningCenter(cls.learningCenter);
+    setLearningCenter(cls.learningCenter || '');
     setAssignedTeacherId(cls.assignedTeacherId || '');
     setSchedule(cls.schedule || 'Mon - Fri (09:00 AM - 01:00 PM)');
     setModalOpen(true);
@@ -101,7 +100,7 @@ export const ClassesPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !grade.trim() || !learningCenter.trim()) {
+    if (!name.trim() || !grade.trim()) {
       toast.error('Please fill in required fields');
       return;
     }
@@ -112,7 +111,7 @@ export const ClassesPage: React.FC = () => {
         await dataService.updateClass(currentId, {
           name: name.trim(),
           grade: grade.trim(),
-          learningCenter: learningCenter.trim(),
+          learningCenter: '',
           assignedTeacherId: assignedTeacherId || null,
           schedule: schedule.trim()
         });
@@ -121,7 +120,7 @@ export const ClassesPage: React.FC = () => {
         await dataService.createClass({
           name: name.trim(),
           grade: grade.trim(),
-          learningCenter: learningCenter.trim(),
+          learningCenter: '',
           assignedTeacherId: assignedTeacherId || null,
           assignedTeacherName: teachers.find(t => t.id === assignedTeacherId)?.name || null,
           schedule: schedule.trim()
@@ -223,10 +222,6 @@ export const ClassesPage: React.FC = () => {
                 </div>
 
                 <div className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{cls.learningCenter}</span>
-                  </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span>{cls.schedule || 'Regular schedule'}</span>
@@ -343,20 +338,6 @@ export const ClassesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {t('classes.center')} *
-              </label>
-              <input
-                type="text"
-                value={learningCenter}
-                onChange={e => setLearningCenter(e.target.value)}
-                required
-                placeholder="e.g. Dharavi Community Center"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
             </div>
 
             <div>
