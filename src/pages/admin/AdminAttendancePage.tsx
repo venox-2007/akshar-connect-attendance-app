@@ -1,0 +1,76 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '../../i18n';
+import { dataService } from '../../services/dataService';
+import { ClassEntity } from '../../types';
+import { AttendanceSession } from '../../components/attendance/AttendanceSession';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+
+export const AdminAttendancePage: React.FC = () => {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const requestedClassId = searchParams.get('classId');
+
+  const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState<ClassEntity[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchClasses = async () => {
+      try {
+        const clsList = await dataService.getClasses();
+        if (!isMounted) return;
+        setClasses(clsList);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchClasses();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (loading) return <LoadingSpinner message="Loading attendance..." />;
+
+  if (classes.length === 0) {
+    return (
+      <div className="p-8 text-center bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800">
+        <h3 className="text-base font-bold text-slate-800 dark:text-white">
+          No Classes Created Yet
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Create a class first from the Classes page before recording attendance.
+        </p>
+      </div>
+    );
+  }
+
+  const initialClassId =
+    requestedClassId && classes.some(c => c.id === requestedClassId)
+      ? requestedClassId
+      : classes[0].id;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          {t('attendance.title')}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          Administrator view: Take or modify attendance across any learning center and class.
+        </p>
+      </div>
+
+      <AttendanceSession
+        initialClassId={initialClassId}
+        allowedClasses={classes}
+        markedByName={user?.name || 'Administrator'}
+      />
+    </div>
+  );
+};
