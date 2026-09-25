@@ -8,8 +8,42 @@ const getEnvVar = (key: string): string | undefined => {
   } catch (e) {}
   try {
     const globalProcess = (globalThis as any).process;
-    if (typeof globalProcess !== 'undefined' && globalProcess.env && globalProcess.env[key]) {
-      return globalProcess.env[key];
+    if (typeof globalProcess !== 'undefined' && globalProcess.env) {
+      if (globalProcess.env[key]) {
+        return globalProcess.env[key];
+      }
+      if (typeof window === 'undefined') {
+        try {
+          const getModule = (name: string) => {
+            if (typeof globalProcess.getBuiltinModule === 'function') {
+              return globalProcess.getBuiltinModule(name);
+            }
+            if (typeof (globalThis as any).require === 'function') {
+              return (globalThis as any).require(name);
+            }
+            return null;
+          };
+          const fs = getModule('fs');
+          const path = getModule('path');
+          if (fs && path) {
+            const envFile = path.resolve(globalProcess.cwd(), '.env');
+            if (fs && fs.existsSync(envFile)) {
+              const text = fs.readFileSync(envFile, 'utf8');
+              for (const line of text.split('\n')) {
+                const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+                if (match && match[1] === key) {
+                  let val = (match[2] || '').trim();
+                  if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                    val = val.slice(1, -1);
+                  }
+                  globalProcess.env[key] = val;
+                  return val;
+                }
+              }
+            }
+          }
+        } catch (e) {}
+      }
     }
   } catch (e) {}
   return undefined;

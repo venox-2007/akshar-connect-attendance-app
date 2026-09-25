@@ -430,24 +430,29 @@ class DataService {
     const { isAdmin, user } = this.requireClassAccess(id);
 
     if (isSupabaseConfigured && supabase) {
-      const { data: c, error } = await supabase
-        .from('classes')
-        .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
-        .eq('id', id)
-        .single();
+      try {
+        const { data: c, error } = await supabase
+          .from('classes')
+          .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error || !c) return null;
-
-      const assignment = c.teacher_classes?.[0];
-      return {
-        id: c.id,
-        name: c.name,
-        grade: c.grade,
-        schedule: c.schedule,
-        assignedTeacherId: assignment?.teacher_id || null,
-        assignedTeacherName: assignment?.teachers?.name || null,
-        studentCount: Array.isArray(c.students) ? c.students.length : 0
-      };
+        if (!error && c) {
+          const assignment = c.teacher_classes?.[0];
+          return {
+            id: c.id,
+            name: c.name,
+            grade: c.grade,
+            schedule: c.schedule,
+            assignedTeacherId: assignment?.teacher_id || null,
+            assignedTeacherName: assignment?.teachers?.name || null,
+            studentCount: Array.isArray(c.students) ? c.students.length : 0
+          };
+        }
+        if (!error && !c) {
+          return null;
+        }
+      } catch (e) {}
     }
 
     const data = this.loadData();
@@ -751,39 +756,46 @@ class DataService {
     const user = this.getCurrentUserOrThrow();
 
     if (isSupabaseConfigured && supabase) {
-      const { data: s, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('id', id)
-        .single();
+      try {
+        const { data: s, error } = await supabase
+          .from('students')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error || !s) return null;
+        if (!error && s) {
+          if (user.role === 'TEACHER') {
+            const { data: assignments } = await supabase
+              .from('teacher_classes')
+              .select('class_id')
+              .eq('teacher_id', user.teacherId || '');
 
-      if (user.role === 'TEACHER') {
-        const { data: assignments } = await supabase
-          .from('teacher_classes')
-          .select('class_id')
-          .eq('teacher_id', user.teacherId || '');
+            const assignedIds = (assignments || []).map(a => a.class_id);
+            if (!assignedIds.includes(s.class_id)) {
+              throw new AuthorizationError(
+                `Access denied: Educator "${user.name}" cannot view student not in their assigned classes.`
+              );
+            }
+          }
 
-        const assignedIds = (assignments || []).map(a => a.class_id);
-        if (!assignedIds.includes(s.class_id)) {
-          throw new AuthorizationError(
-            `Access denied: Educator "${user.name}" cannot view student not in their assigned classes.`
-          );
+          return {
+            id: s.id,
+            name: s.name,
+            rollNumber: s.roll_number,
+            classId: s.class_id,
+            gender: s.gender,
+            status: s.status,
+            guardianName: s.guardian_name || undefined,
+            guardianPhone: s.guardian_phone || undefined,
+            dob: s.dob || undefined
+          };
         }
+        if (!error && !s) {
+          return null;
+        }
+      } catch (err) {
+        if (err instanceof AuthorizationError) throw err;
       }
-
-      return {
-        id: s.id,
-        name: s.name,
-        rollNumber: s.roll_number,
-        classId: s.class_id,
-        gender: s.gender,
-        status: s.status,
-        guardianName: s.guardian_name || undefined,
-        guardianPhone: s.guardian_phone || undefined,
-        dob: s.dob || undefined
-      };
     }
 
     const data = this.loadData();

@@ -202,6 +202,10 @@ class AuthService {
   }
 
   public async logout(): Promise<void> {
+    this.currentUser = null;
+    localStorage.removeItem(SESSION_KEY);
+    this.notify();
+
     if (isSupabaseConfigured && supabase) {
       try {
         await supabase.auth.signOut();
@@ -209,10 +213,6 @@ class AuthService {
         console.error('Error signing out of Supabase:', err);
       }
     }
-
-    this.currentUser = null;
-    localStorage.removeItem(SESSION_KEY);
-    this.notify();
   }
 
   public subscribe(callback: (user: User | null) => void): () => void {
