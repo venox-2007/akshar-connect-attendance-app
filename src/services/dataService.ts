@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { getFreshMockDatabase, MockDatabaseState } from '../data/mockDatabase';
 import { authService } from './authService';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const STORAGE_KEY = 'akshar_connect_records_v5';
 
@@ -120,6 +121,27 @@ class DataService {
    */
   public async getTeachers(): Promise<Teacher[]> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: rawTeachers, error } = await supabase
+        .from('teachers')
+        .select('*, teacher_classes(class_id)')
+        .order('name');
+
+      if (error) throw new Error(error.message);
+
+      return (rawTeachers || []).map(t => ({
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        phone: t.phone,
+        status: t.status,
+        qualification: t.qualification || undefined,
+        joinedDate: t.joined_date,
+        assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
+      }));
+    }
+
     const data = this.loadData();
     return [...data.teachers];
   }
@@ -133,6 +155,27 @@ class DataService {
       throw new AuthorizationError('Access denied: Educators may only view their own profile.');
     }
 
+    if (isSupabaseConfigured && supabase) {
+      const { data: t, error } = await supabase
+        .from('teachers')
+        .select('*, teacher_classes(class_id)')
+        .eq('id', id)
+        .single();
+
+      if (error || !t) return null;
+
+      return {
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        phone: t.phone,
+        status: t.status,
+        qualification: t.qualification || undefined,
+        joinedDate: t.joined_date,
+        assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
+      };
+    }
+
     const data = this.loadData();
     const teacher = data.teachers.find(t => t.id === id);
     return teacher ? { ...teacher } : null;
@@ -143,6 +186,43 @@ class DataService {
    */
   public async createTeacher(teacherInput: Omit<Teacher, 'id'>): Promise<Teacher> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: teacher, error } = await supabase
+        .from('teachers')
+        .insert({
+          name: teacherInput.name,
+          email: teacherInput.email,
+          phone: teacherInput.phone,
+          status: teacherInput.status,
+          qualification: teacherInput.qualification || null,
+          joined_date: teacherInput.joinedDate || new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      if (teacherInput.assignedClassIds && teacherInput.assignedClassIds.length > 0) {
+        const assignments = teacherInput.assignedClassIds.map(classId => ({
+          teacher_id: teacher.id,
+          class_id: classId
+        }));
+        await supabase.from('teacher_classes').insert(assignments);
+      }
+
+      return {
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        phone: teacher.phone,
+        status: teacher.status,
+        qualification: teacher.qualification || undefined,
+        joinedDate: teacher.joined_date,
+        assignedClassIds: teacherInput.assignedClassIds || []
+      };
+    }
+
     const data = this.loadData();
     const newId = `tch-${Date.now()}`;
     const newTeacher: Teacher = {
@@ -151,7 +231,6 @@ class DataService {
       assignedClassIds: teacherInput.assignedClassIds || []
     };
 
-    // Update classes assigned to this new teacher
     if (newTeacher.assignedClassIds.length > 0) {
       data.classes = data.classes.map(cls => {
         if (newTeacher.assignedClassIds.includes(cls.id)) {
@@ -167,50 +246,80 @@ class DataService {
 
     data.teachers.push(newTeacher);
     this.saveData(data);
-    return newTeacher;
+    return { ...newTeacher };
   }
 
   /**
    * Only Administrators may update teachers.
    */
-  public async updateTeacher(id: string, updates: Partial<Omit<Teacher, 'id'>>): Promise<Teacher> {
+  public async updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const teacherPayload: Record<string, any> = {};
+      if (updates.name !== undefined) teacherPayload.name = updates.name;
+      if (updates.email !== undefined) teacherPayload.email = updates.email;
+      if (updates.phone !== undefined) teacherPayload.phone = updates.phone;
+      if (updates.status !== undefined) teacherPayload.status = updates.status;
+      if (updates.qualification !== undefined) teacherPayload.qualification = updates.qualification;
+
+      if (Object.keys(teacherPayload).length > 0) {
+        const { error } = await supabase.from('teachers').update(teacherPayload).eq('id', id);
+        if (error) throw new Error(error.message);
+      }
+
+      if (updates.assignedClassIds !== undefined) {
+        await supabase.from('teacher_classes').delete().eq('teacher_id', id);
+        if (updates.assignedClassIds.length > 0) {
+          const assignments = updates.assignedClassIds.map(classId => ({
+            teacher_id: id,
+            class_id: classId
+          }));
+          await supabase.from('teacher_classes').insert(assignments);
+        }
+      }
+
+      const updated = await this.getTeacherById(id);
+      if (!updated) throw new Error(`Teacher with ID ${id} not found.`);
+      return updated;
+    }
+
     const data = this.loadData();
     const index = data.teachers.findIndex(t => t.id === id);
     if (index === -1) {
-      throw new Error(`Teacher with id ${id} not found.`);
+      throw new Error(`Teacher with ID "${id}" not found.`);
     }
 
-    const current = data.teachers[index];
-    const updated: Teacher = {
-      ...current,
-      ...updates
+    const oldTeacher = data.teachers[index];
+    const updatedTeacher: Teacher = {
+      ...oldTeacher,
+      ...updates,
+      id
     };
 
-    // Handle class assignment sync if classes or name changed
-    if (updates.assignedClassIds !== undefined || updates.name !== undefined) {
-      const newAssignedClassIds = updated.assignedClassIds;
+    if (updates.assignedClassIds !== undefined) {
       data.classes = data.classes.map(cls => {
-        if (newAssignedClassIds.includes(cls.id)) {
-          return {
-            ...cls,
-            assignedTeacherId: updated.id,
-            assignedTeacherName: updated.name
-          };
-        } else if (cls.assignedTeacherId === updated.id) {
+        if (cls.assignedTeacherId === id && !updatedTeacher.assignedClassIds.includes(cls.id)) {
           return {
             ...cls,
             assignedTeacherId: null,
             assignedTeacherName: null
           };
         }
+        if (updatedTeacher.assignedClassIds.includes(cls.id)) {
+          return {
+            ...cls,
+            assignedTeacherId: updatedTeacher.id,
+            assignedTeacherName: updatedTeacher.name
+          };
+        }
         return cls;
       });
     }
 
-    data.teachers[index] = updated;
+    data.teachers[index] = updatedTeacher;
     this.saveData(data);
-    return updated;
+    return { ...updatedTeacher };
   }
 
   /**
@@ -218,12 +327,15 @@ class DataService {
    */
   public async deleteTeacher(id: string): Promise<void> {
     this.requireAdmin();
-    const data = this.loadData();
-    const teacherToDelete = data.teachers.find(t => t.id === id);
-    if (!teacherToDelete) {
-      throw new Error(`Teacher with id ${id} not found.`);
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('teachers').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
     }
 
+    const data = this.loadData();
+    data.teachers = data.teachers.filter(t => t.id !== id);
     data.classes = data.classes.map(cls => {
       if (cls.assignedTeacherId === id) {
         return {
@@ -235,43 +347,113 @@ class DataService {
       return cls;
     });
 
-    data.teachers = data.teachers.filter(t => t.id !== id);
     this.saveData(data);
   }
 
   // ===================== CLASSES CRUD =====================
 
   /**
-   * Admin can view all classes.
-   * Teachers only retrieve their assigned classes.
+   * Administrator can view all classes.
+   * Teachers can ONLY view their assigned classes.
    */
   public async getClasses(): Promise<ClassEntity[]> {
     const user = this.getCurrentUserOrThrow();
-    const data = this.loadData();
 
-    let accessibleClasses = data.classes;
-    if (user.role === 'TEACHER') {
-      const teacher = data.teachers.find(t => t.id === user.teacherId);
-      accessibleClasses = data.classes.filter(
-        c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id))
-      );
+    if (isSupabaseConfigured && supabase) {
+      let query = supabase
+        .from('classes')
+        .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
+        .order('name');
+
+      if (user.role === 'TEACHER') {
+        const { data: assignments } = await supabase
+          .from('teacher_classes')
+          .select('class_id')
+          .eq('teacher_id', user.teacherId || '');
+
+        const assignedIds = (assignments || []).map(a => a.class_id);
+        if (assignedIds.length === 0) return [];
+        query = query.in('id', assignedIds);
+      }
+
+      const { data: rawClasses, error } = await query;
+      if (error) throw new Error(error.message);
+
+      return (rawClasses || []).map(c => {
+        const assignment = c.teacher_classes?.[0];
+        return {
+          id: c.id,
+          name: c.name,
+          grade: c.grade,
+          schedule: c.schedule,
+          assignedTeacherId: assignment?.teacher_id || null,
+          assignedTeacherName: assignment?.teachers?.name || null,
+          studentCount: Array.isArray(c.students) ? c.students.length : 0
+        };
+      });
     }
 
-    return accessibleClasses.map(cls => ({
+    const data = this.loadData();
+
+    if (user.role === 'TEACHER') {
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      return data.classes
+        .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
+        .map(cls => ({
+          ...cls,
+          studentCount: data.students.filter(s => s.classId === cls.id).length
+        }));
+    }
+
+    return data.classes.map(cls => ({
       ...cls,
       studentCount: data.students.filter(s => s.classId === cls.id).length
     }));
   }
 
   /**
-   * Admin can view any class.
-   * Teachers can only view class if assigned to it.
+   * Admin can view any class; Teachers can ONLY view their assigned class.
    */
   public async getClassById(id: string): Promise<ClassEntity | null> {
-    this.requireClassAccess(id);
+    const { isAdmin, user } = this.requireClassAccess(id);
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: c, error } = await supabase
+        .from('classes')
+        .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
+        .eq('id', id)
+        .single();
+
+      if (error || !c) return null;
+
+      const assignment = c.teacher_classes?.[0];
+      return {
+        id: c.id,
+        name: c.name,
+        grade: c.grade,
+        schedule: c.schedule,
+        assignedTeacherId: assignment?.teacher_id || null,
+        assignedTeacherName: assignment?.teachers?.name || null,
+        studentCount: Array.isArray(c.students) ? c.students.length : 0
+      };
+    }
+
     const data = this.loadData();
     const cls = data.classes.find(c => c.id === id);
     if (!cls) return null;
+
+    if (!isAdmin && user.teacherId) {
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      const isAssigned =
+        cls.assignedTeacherId === user.teacherId ||
+        (teacher && teacher.assignedClassIds.includes(cls.id));
+      if (!isAssigned) {
+        throw new AuthorizationError(
+          `Access denied: Educator "${user.name}" cannot view details of unassigned class (${id}).`
+        );
+      }
+    }
+
     return {
       ...cls,
       studentCount: data.students.filter(s => s.classId === cls.id).length
@@ -283,82 +465,133 @@ class DataService {
    */
   public async createClass(classInput: Omit<ClassEntity, 'id' | 'studentCount'>): Promise<ClassEntity> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: cls, error } = await supabase
+        .from('classes')
+        .insert({
+          name: classInput.name,
+          grade: classInput.grade,
+          schedule: classInput.schedule || 'Mon - Fri (09:00 AM - 01:00 PM)'
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      if (classInput.assignedTeacherId) {
+        await supabase.from('teacher_classes').insert({
+          class_id: cls.id,
+          teacher_id: classInput.assignedTeacherId
+        });
+      }
+
+      return {
+        id: cls.id,
+        name: cls.name,
+        grade: cls.grade,
+        schedule: cls.schedule,
+        assignedTeacherId: classInput.assignedTeacherId || null,
+        assignedTeacherName: classInput.assignedTeacherName || null,
+        studentCount: 0
+      };
+    }
+
     const data = this.loadData();
     const newId = `cls-${Date.now()}`;
+    const newClass: ClassEntity = {
+      ...classInput,
+      id: newId,
+      studentCount: 0
+    };
 
-    let assignedTeacherName = null;
-    if (classInput.assignedTeacherId) {
-      const teacher = data.teachers.find(t => t.id === classInput.assignedTeacherId);
+    if (newClass.assignedTeacherId) {
+      const teacher = data.teachers.find(t => t.id === newClass.assignedTeacherId);
       if (teacher) {
-        assignedTeacherName = teacher.name;
+        newClass.assignedTeacherName = teacher.name;
         if (!teacher.assignedClassIds.includes(newId)) {
           teacher.assignedClassIds.push(newId);
         }
       }
     }
 
-    const newClass: ClassEntity = {
-      ...classInput,
-      id: newId,
-      assignedTeacherName,
-      studentCount: 0
-    };
-
     data.classes.push(newClass);
     this.saveData(data);
-    return newClass;
+    return { ...newClass };
   }
 
   /**
    * Only Administrators may update classes.
    */
-  public async updateClass(id: string, updates: Partial<Omit<ClassEntity, 'id' | 'studentCount'>>): Promise<ClassEntity> {
+  public async updateClass(id: string, updates: Partial<ClassEntity>): Promise<ClassEntity> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const classPayload: Record<string, any> = {};
+      if (updates.name !== undefined) classPayload.name = updates.name;
+      if (updates.grade !== undefined) classPayload.grade = updates.grade;
+      if (updates.schedule !== undefined) classPayload.schedule = updates.schedule;
+
+      if (Object.keys(classPayload).length > 0) {
+        const { error } = await supabase.from('classes').update(classPayload).eq('id', id);
+        if (error) throw new Error(error.message);
+      }
+
+      if (updates.assignedTeacherId !== undefined) {
+        await supabase.from('teacher_classes').delete().eq('class_id', id);
+        if (updates.assignedTeacherId) {
+          await supabase.from('teacher_classes').insert({
+            class_id: id,
+            teacher_id: updates.assignedTeacherId
+          });
+        }
+      }
+
+      const updated = await this.getClassById(id);
+      if (!updated) throw new Error(`Class with ID ${id} not found.`);
+      return updated;
+    }
+
     const data = this.loadData();
     const index = data.classes.findIndex(c => c.id === id);
     if (index === -1) {
-      throw new Error(`Class with id ${id} not found.`);
+      throw new Error(`Class with ID "${id}" not found.`);
     }
 
-    const current = data.classes[index];
-    let assignedTeacherName = current.assignedTeacherName;
+    const oldClass = data.classes[index];
+    const updatedClass: ClassEntity = {
+      ...oldClass,
+      ...updates,
+      id
+    };
 
     if (updates.assignedTeacherId !== undefined) {
-      const oldTeacherId = current.assignedTeacherId;
-      const newTeacherId = updates.assignedTeacherId;
-
-      if (oldTeacherId && oldTeacherId !== newTeacherId) {
-        const oldTeacher = data.teachers.find(t => t.id === oldTeacherId);
+      if (oldClass.assignedTeacherId && oldClass.assignedTeacherId !== updates.assignedTeacherId) {
+        const oldTeacher = data.teachers.find(t => t.id === oldClass.assignedTeacherId);
         if (oldTeacher) {
-          oldTeacher.assignedClassIds = oldTeacher.assignedClassIds.filter(cId => cId !== id);
+          oldTeacher.assignedClassIds = oldTeacher.assignedClassIds.filter(cid => cid !== id);
         }
       }
 
-      if (newTeacherId) {
-        const newTeacher = data.teachers.find(t => t.id === newTeacherId);
+      if (updates.assignedTeacherId) {
+        const newTeacher = data.teachers.find(t => t.id === updates.assignedTeacherId);
         if (newTeacher) {
-          assignedTeacherName = newTeacher.name;
+          updatedClass.assignedTeacherName = newTeacher.name;
           if (!newTeacher.assignedClassIds.includes(id)) {
             newTeacher.assignedClassIds.push(id);
           }
-        } else {
-          assignedTeacherName = null;
         }
       } else {
-        assignedTeacherName = null;
+        updatedClass.assignedTeacherName = null;
       }
     }
 
-    const updated: ClassEntity = {
-      ...current,
-      ...updates,
-      assignedTeacherName,
+    data.classes[index] = updatedClass;
+    this.saveData(data);
+    return {
+      ...updatedClass,
       studentCount: data.students.filter(s => s.classId === id).length
     };
-
-    data.classes[index] = updated;
-    this.saveData(data);
-    return updated;
   }
 
   /**
@@ -366,37 +599,86 @@ class DataService {
    */
   public async deleteClass(id: string): Promise<void> {
     this.requireAdmin();
-    const data = this.loadData();
-    const clsToDelete = data.classes.find(c => c.id === id);
-    if (!clsToDelete) {
-      throw new Error(`Class with id ${id} not found.`);
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('classes').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
     }
 
-    data.teachers = data.teachers.map(teacher => {
-      if (teacher.assignedClassIds.includes(id)) {
-        return {
-          ...teacher,
-          assignedClassIds: teacher.assignedClassIds.filter(cId => cId !== id)
-        };
-      }
-      return teacher;
-    });
-
+    const data = this.loadData();
+    data.classes = data.classes.filter(c => c.id !== id);
+    data.teachers = data.teachers.map(tch => ({
+      ...tch,
+      assignedClassIds: tch.assignedClassIds.filter(cid => cid !== id)
+    }));
     data.students = data.students.filter(s => s.classId !== id);
     data.attendance = data.attendance.filter(a => a.classId !== id);
-    data.classes = data.classes.filter(c => c.id !== id);
+
     this.saveData(data);
   }
 
   // ===================== STUDENTS CRUD =====================
 
   /**
-   * Admin can view all students.
-   * Teachers can ONLY view students belonging to their assigned classes.
-   * If a teacher specifies a classId outside their assignment, throws AuthorizationError.
+   * Administrator can view all students.
+   * Teachers can ONLY view students of their assigned classes.
    */
   public async getStudents(filter?: { classId?: string; search?: string }): Promise<Student[]> {
     const user = this.getCurrentUserOrThrow();
+
+    if (isSupabaseConfigured && supabase) {
+      let query = supabase.from('students').select('*').order('roll_number');
+
+      if (user.role === 'TEACHER') {
+        const { data: assignments } = await supabase
+          .from('teacher_classes')
+          .select('class_id')
+          .eq('teacher_id', user.teacherId || '');
+
+        const assignedIds = (assignments || []).map(a => a.class_id);
+        if (filter?.classId) {
+          if (!assignedIds.includes(filter.classId)) {
+            throw new AuthorizationError(
+              `Access denied: Educator "${user.name}" cannot view students of unassigned class (${filter.classId}).`
+            );
+          }
+          query = query.eq('class_id', filter.classId);
+        } else {
+          if (assignedIds.length === 0) return [];
+          query = query.in('class_id', assignedIds);
+        }
+      } else if (filter?.classId) {
+        query = query.eq('class_id', filter.classId);
+      }
+
+      const { data: rawStudents, error } = await query;
+      if (error) throw new Error(error.message);
+
+      let result: Student[] = (rawStudents || []).map(s => ({
+        id: s.id,
+        name: s.name,
+        rollNumber: s.roll_number,
+        classId: s.class_id,
+        gender: s.gender,
+        status: s.status,
+        guardianName: s.guardian_name || undefined,
+        guardianPhone: s.guardian_phone || undefined,
+        dob: s.dob || undefined
+      }));
+
+      if (filter?.search) {
+        const q = filter.search.toLowerCase();
+        result = result.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.rollNumber.toLowerCase().includes(q) ||
+          (s.guardianName && s.guardianName.toLowerCase().includes(q))
+        );
+      }
+
+      return result;
+    }
+
     const data = this.loadData();
 
     if (user.role === 'TEACHER') {
@@ -405,7 +687,6 @@ class DataService {
         .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
         .map(c => c.id);
 
-      // If teacher specifically requests a class, verify authorization
       if (filter?.classId) {
         if (!teacherClassIds.includes(filter.classId)) {
           throw new AuthorizationError(
@@ -414,7 +695,6 @@ class DataService {
         }
       }
 
-      // Restrict all returned students strictly to teacher's assigned classes
       let result = data.students.filter(s => teacherClassIds.includes(s.classId));
       if (filter?.classId) {
         result = result.filter(s => s.classId === filter.classId);
@@ -430,7 +710,6 @@ class DataService {
       return result;
     }
 
-    // Administrator
     let result = [...data.students];
     if (filter?.classId) {
       result = result.filter(s => s.classId === filter.classId);
@@ -448,16 +727,62 @@ class DataService {
 
   /**
    * Admin can view any student.
-   * Teacher may only view student if student is enrolled in their assigned class.
+   * Teachers can only view students belonging to their assigned classes.
    */
   public async getStudentById(id: string): Promise<Student | null> {
     const user = this.getCurrentUserOrThrow();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: s, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !s) return null;
+
+      if (user.role === 'TEACHER') {
+        const { data: assignments } = await supabase
+          .from('teacher_classes')
+          .select('class_id')
+          .eq('teacher_id', user.teacherId || '');
+
+        const assignedIds = (assignments || []).map(a => a.class_id);
+        if (!assignedIds.includes(s.class_id)) {
+          throw new AuthorizationError(
+            `Access denied: Educator "${user.name}" cannot view student not in their assigned classes.`
+          );
+        }
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        rollNumber: s.roll_number,
+        classId: s.class_id,
+        gender: s.gender,
+        status: s.status,
+        guardianName: s.guardian_name || undefined,
+        guardianPhone: s.guardian_phone || undefined,
+        dob: s.dob || undefined
+      };
+    }
+
     const data = this.loadData();
     const student = data.students.find(s => s.id === id);
     if (!student) return null;
 
     if (user.role === 'TEACHER') {
-      this.requireClassAccess(student.classId);
+      const teacher = data.teachers.find(t => t.id === user.teacherId);
+      const teacherClassIds = data.classes
+        .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
+        .map(c => c.id);
+
+      if (!teacherClassIds.includes(student.classId)) {
+        throw new AuthorizationError(
+          `Access denied: Educator "${user.name}" cannot view student (${id}) not in their assigned classes.`
+        );
+      }
     }
 
     return { ...student };
@@ -468,57 +793,104 @@ class DataService {
    */
   public async createStudent(studentInput: Omit<Student, 'id'>): Promise<Student> {
     this.requireAdmin();
-    const data = this.loadData();
 
-    const classExists = data.classes.some(c => c.id === studentInput.classId);
-    if (!classExists) {
-      throw new Error('Assigned class does not exist.');
+    if (isSupabaseConfigured && supabase) {
+      const { data: s, error } = await supabase
+        .from('students')
+        .insert({
+          roll_number: studentInput.rollNumber,
+          name: studentInput.name,
+          class_id: studentInput.classId,
+          gender: studentInput.gender,
+          status: studentInput.status,
+          guardian_name: studentInput.guardianName || null,
+          guardian_phone: studentInput.guardianPhone || null,
+          dob: studentInput.dob || null
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return {
+        id: s.id,
+        name: s.name,
+        rollNumber: s.roll_number,
+        classId: s.class_id,
+        gender: s.gender,
+        status: s.status,
+        guardianName: s.guardian_name || undefined,
+        guardianPhone: s.guardian_phone || undefined,
+        dob: s.dob || undefined
+      };
     }
 
-    const newId = `std-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const data = this.loadData();
+    const newId = `std-${Date.now()}`;
     const newStudent: Student = {
       ...studentInput,
       id: newId
     };
 
     data.students.push(newStudent);
-
-    const targetClass = data.classes.find(c => c.id === studentInput.classId);
-    if (targetClass) {
-      targetClass.studentCount = data.students.filter(s => s.classId === studentInput.classId).length;
-    }
-
     this.saveData(data);
-    return newStudent;
+    return { ...newStudent };
   }
 
   /**
    * Only Administrators may update students.
    */
-  public async updateStudent(id: string, updates: Partial<Omit<Student, 'id'>>): Promise<Student> {
+  public async updateStudent(id: string, updates: Partial<Student>): Promise<Student> {
     this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const payload: Record<string, any> = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.rollNumber !== undefined) payload.roll_number = updates.rollNumber;
+      if (updates.classId !== undefined) payload.class_id = updates.classId;
+      if (updates.gender !== undefined) payload.gender = updates.gender;
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.guardianName !== undefined) payload.guardian_name = updates.guardianName;
+      if (updates.guardianPhone !== undefined) payload.guardian_phone = updates.guardianPhone;
+      if (updates.dob !== undefined) payload.dob = updates.dob;
+
+      const { data: s, error } = await supabase
+        .from('students')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return {
+        id: s.id,
+        name: s.name,
+        rollNumber: s.roll_number,
+        classId: s.class_id,
+        gender: s.gender,
+        status: s.status,
+        guardianName: s.guardian_name || undefined,
+        guardianPhone: s.guardian_phone || undefined,
+        dob: s.dob || undefined
+      };
+    }
+
     const data = this.loadData();
     const index = data.students.findIndex(s => s.id === id);
     if (index === -1) {
-      throw new Error(`Student with id ${id} not found.`);
+      throw new Error(`Student with ID "${id}" not found.`);
     }
 
-    const oldClassId = data.students[index].classId;
     const updated: Student = {
       ...data.students[index],
-      ...updates
+      ...updates,
+      id
     };
 
     data.students[index] = updated;
-
-    if (updates.classId && updates.classId !== oldClassId) {
-      data.classes.forEach(c => {
-        c.studentCount = data.students.filter(s => s.classId === c.id).length;
-      });
-    }
-
     this.saveData(data);
-    return updated;
+    return { ...updated };
   }
 
   /**
@@ -526,21 +898,16 @@ class DataService {
    */
   public async deleteStudent(id: string): Promise<void> {
     this.requireAdmin();
-    const data = this.loadData();
-    const student = data.students.find(s => s.id === id);
-    if (!student) {
-      throw new Error(`Student with id ${id} not found.`);
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('students').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return;
     }
 
-    const classId = student.classId;
+    const data = this.loadData();
     data.students = data.students.filter(s => s.id !== id);
     data.attendance = data.attendance.filter(a => a.studentId !== id);
-
-    const cls = data.classes.find(c => c.id === classId);
-    if (cls) {
-      cls.studentCount = data.students.filter(s => s.classId === classId).length;
-    }
-
     this.saveData(data);
   }
 
@@ -549,7 +916,6 @@ class DataService {
   /**
    * Admin can view all attendance logs.
    * Teachers can ONLY view attendance logs for their assigned classes.
-   * If a teacher specifies an unassigned classId, throws AuthorizationError.
    */
   public async getAttendance(filter?: {
     classId?: string;
@@ -557,6 +923,51 @@ class DataService {
     studentId?: string;
   }): Promise<AttendanceRecord[]> {
     const user = this.getCurrentUserOrThrow();
+
+    if (isSupabaseConfigured && supabase) {
+      let query = supabase.from('attendance_records').select('*').order('date', { ascending: false });
+
+      if (user.role === 'TEACHER') {
+        const { data: assignments } = await supabase
+          .from('teacher_classes')
+          .select('class_id')
+          .eq('teacher_id', user.teacherId || '');
+
+        const assignedIds = (assignments || []).map(a => a.class_id);
+
+        if (filter?.classId) {
+          if (!assignedIds.includes(filter.classId)) {
+            throw new AuthorizationError(
+              `Access denied: Educator "${user.name}" cannot view attendance of unassigned class (${filter.classId}).`
+            );
+          }
+          query = query.eq('class_id', filter.classId);
+        } else {
+          if (assignedIds.length === 0) return [];
+          query = query.in('class_id', assignedIds);
+        }
+      } else if (filter?.classId) {
+        query = query.eq('class_id', filter.classId);
+      }
+
+      if (filter?.date) query = query.eq('date', filter.date);
+      if (filter?.studentId) query = query.eq('student_id', filter.studentId);
+
+      const { data: rawAttendance, error } = await query;
+      if (error) throw new Error(error.message);
+
+      return (rawAttendance || []).map(r => ({
+        id: r.id,
+        studentId: r.student_id,
+        classId: r.class_id,
+        date: r.date,
+        status: r.status,
+        markedBy: r.marked_by,
+        updatedAt: r.updated_at,
+        notes: r.notes || undefined
+      }));
+    }
+
     const data = this.loadData();
 
     if (user.role === 'TEACHER') {
@@ -565,7 +976,6 @@ class DataService {
         .filter(c => c.assignedTeacherId === user.teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
         .map(c => c.id);
 
-      // Verify specific class request
       if (filter?.classId) {
         if (!teacherClassIds.includes(filter.classId)) {
           throw new AuthorizationError(
@@ -574,7 +984,6 @@ class DataService {
         }
       }
 
-      // If specific studentId is requested, verify student is in teacher's class
       if (filter?.studentId) {
         const student = data.students.find(s => s.id === filter.studentId);
         if (!student || !teacherClassIds.includes(student.classId)) {
@@ -598,7 +1007,6 @@ class DataService {
       return records.sort((a, b) => b.date.localeCompare(a.date));
     }
 
-    // Administrator
     let records = [...data.attendance];
     if (filter?.classId) {
       records = records.filter(r => r.classId === filter.classId);
@@ -614,63 +1022,78 @@ class DataService {
   }
 
   /**
-   * Save or edit attendance.
-   * Admin can record attendance for any class.
-   * Teachers can ONLY record attendance for their assigned classes.
-   * Throws AuthorizationError if teacher tries to record/edit attendance for an unassigned class.
+   * Saves attendance records for a class session.
+   * Admin can save attendance for any class.
+   * Teachers can ONLY save attendance for their assigned classes.
    */
   public async saveAttendance(
     classId: string,
     date: string,
-    entries: { studentId: string; status: AttendanceStatus; notes?: string }[],
-    markedBy: string
+    records: Array<{ studentId: string; status: AttendanceStatus; notes?: string }>,
+    markedByName: string
   ): Promise<AttendanceRecord[]> {
-    if (!classId) throw new Error('Class ID is required');
-    if (!date) throw new Error('Date is required');
-    if (!entries || entries.length === 0) throw new Error('No attendance records to save');
-
-    // Strict class-level authorization check
     this.requireClassAccess(classId);
 
-    const data = this.loadData();
+    if (isSupabaseConfigured && supabase) {
+      const recordsToUpsert = records.map(r => ({
+        student_id: r.studentId,
+        class_id: classId,
+        date,
+        status: r.status,
+        marked_by: markedByName,
+        notes: r.notes || null
+      }));
 
-    // Verify all students belong to this class
-    const invalidStudent = entries.find(e => {
-      const s = data.students.find(std => std.id === e.studentId);
-      return !s || s.classId !== classId;
-    });
+      const { data: upserted, error } = await supabase
+        .from('attendance_records')
+        .upsert(recordsToUpsert, {
+          onConflict: 'student_id,date'
+        })
+        .select();
 
-    if (invalidStudent) {
-      throw new Error(`Integrity error: Student "${invalidStudent.studentId}" does not belong to class "${classId}".`);
+      if (error) throw new Error(error.message);
+
+      return (upserted || []).map(r => ({
+        id: r.id,
+        studentId: r.student_id,
+        classId: r.class_id,
+        date: r.date,
+        status: r.status,
+        markedBy: r.marked_by,
+        updatedAt: r.updated_at,
+        notes: r.notes || undefined
+      }));
     }
 
+    const data = this.loadData();
     const nowIso = new Date().toISOString();
     const savedRecords: AttendanceRecord[] = [];
 
-    entries.forEach(entry => {
-      const existingIdx = data.attendance.findIndex(
-        r => r.studentId === entry.studentId && r.classId === classId && r.date === date
+    records.forEach(input => {
+      const existingIndex = data.attendance.findIndex(
+        r => r.studentId === input.studentId && r.date === date
       );
 
-      if (existingIdx !== -1) {
-        data.attendance[existingIdx] = {
-          ...data.attendance[existingIdx],
-          status: entry.status,
-          notes: entry.notes ?? data.attendance[existingIdx].notes,
-          markedBy,
+      if (existingIndex >= 0) {
+        data.attendance[existingIndex] = {
+          ...data.attendance[existingIndex],
+          classId,
+          status: input.status,
+          notes: input.notes,
+          markedBy: markedByName,
           updatedAt: nowIso
         };
-        savedRecords.push(data.attendance[existingIdx]);
+        savedRecords.push(data.attendance[existingIndex]);
       } else {
         const newRecord: AttendanceRecord = {
-          id: `att-${entry.studentId}-${date}-${Date.now().toString(36)}`,
-          studentId: entry.studentId,
+          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+          studentId: input.studentId,
           classId,
           date,
-          status: entry.status,
-          notes: entry.notes,
-          markedBy,
-          updatedAt: nowIso
+          status: input.status,
+          markedBy: markedByName,
+          updatedAt: nowIso,
+          notes: input.notes
         };
         data.attendance.push(newRecord);
         savedRecords.push(newRecord);
@@ -681,101 +1104,67 @@ class DataService {
     return savedRecords;
   }
 
-  /**
-   * Only Administrators may delete attendance logs.
-   */
-  public async deleteAttendance(id: string): Promise<void> {
-    this.requireAdmin();
-    const data = this.loadData();
-    data.attendance = data.attendance.filter(a => a.id !== id);
-    this.saveData(data);
-  }
+  // ===================== DASHBOARD METRICS =====================
 
-  // ===================== STATS & REPORTING =====================
-
-  /**
-   * Only Administrators may access organization-wide reports & analytics.
-   */
-  public async getDashboardStats(): Promise<DashboardStats> {
+  public async getAdminDashboardData(): Promise<DashboardStats> {
     this.requireAdmin();
-    const data = this.loadData();
+
+    const [classes, students, attendance] = await Promise.all([
+      this.getClasses(),
+      this.getStudents(),
+      this.getAttendance()
+    ]);
+
+    const teachers = await this.getTeachers();
 
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    const totalStudents = data.students.length;
-    const totalClasses = data.classes.length;
-    const totalTeachers = data.teachers.length;
+    const todayAttendance = attendance.filter(r => r.date === todayStr);
+    const presentToday = todayAttendance.filter(r => r.status === 'present').length;
+    const absentToday = todayAttendance.filter(r => r.status === 'absent').length;
+    const totalMarkedToday = presentToday + absentToday;
+    const percentageToday = totalMarkedToday > 0 ? Math.round((presentToday / totalMarkedToday) * 100) : 0;
 
-    const todayRecords = data.attendance.filter(r => r.date === todayStr);
-    const presentToday = todayRecords.filter(r => r.status === 'present').length;
-    const absentToday = todayRecords.filter(r => r.status === 'absent').length;
-    const totalTodayMarked = presentToday + absentToday;
-    const todayPercentage = totalTodayMarked > 0 ? Math.round((presentToday / totalTodayMarked) * 100) : 0;
-
-    const todayAttendance: AttendanceSummary = {
-      total: totalTodayMarked,
-      present: presentToday,
-      absent: absentToday,
-      percentage: todayPercentage
-    };
-
-    const classBreakdown: ClassAttendanceSummary[] = data.classes.map(cls => {
-      const clsStudents = data.students.filter(s => s.classId === cls.id);
-      const clsTodayRecords = todayRecords.filter(r => r.classId === cls.id);
-      const presentCount = clsTodayRecords.filter(r => r.status === 'present').length;
-      const absentCount = clsTodayRecords.filter(r => r.status === 'absent').length;
-      const markedStudents = presentCount + absentCount;
-      const percentage = markedStudents > 0 ? Math.round((presentCount / markedStudents) * 100) : 0;
+    const classBreakdown: ClassAttendanceSummary[] = classes.map(cls => {
+      const clsStudents = students.filter(s => s.classId === cls.id);
+      const clsTodayRecords = todayAttendance.filter(r => r.classId === cls.id);
+      const clsPresent = clsTodayRecords.filter(r => r.status === 'present').length;
+      const clsAbsent = clsTodayRecords.filter(r => r.status === 'absent').length;
+      const marked = clsPresent + clsAbsent;
+      const pct = marked > 0 ? Math.round((clsPresent / marked) * 100) : 0;
 
       return {
         classId: cls.id,
         className: cls.name,
         learningCenter: cls.learningCenter,
         totalStudents: clsStudents.length,
-        markedStudents,
-        presentCount,
-        absentCount,
-        percentage,
-        isMarkedToday: markedStudents > 0
+        markedStudents: marked,
+        presentCount: clsPresent,
+        absentCount: clsAbsent,
+        percentage: pct,
+        isMarkedToday: marked > 0
       };
     });
 
     return {
-      totalTeachers,
-      totalClasses,
-      totalStudents,
-      todayAttendance,
+      totalTeachers: teachers.length,
+      totalClasses: classes.length,
+      totalStudents: students.length,
+      todayAttendance: {
+        total: totalMarkedToday,
+        present: presentToday,
+        absent: absentToday,
+        percentage: percentageToday
+      },
       classBreakdown
     };
   }
 
-  /**
-   * Only Administrators may export organization-wide reports.
-   */
-  public async getOrganizationReports(): Promise<{
-    classes: ClassEntity[];
-    students: Student[];
-    attendance: AttendanceRecord[];
-  }> {
-    this.requireAdmin();
-    const data = this.loadData();
-    return {
-      classes: [...data.classes],
-      students: [...data.students],
-      attendance: [...data.attendance]
-    };
+  public async getDashboardStats(): Promise<DashboardStats> {
+    return this.getAdminDashboardData();
   }
 
-  /**
-   * Teacher dashboard data:
-   * A teacher may ONLY retrieve their own scoped dashboard data.
-   * Passing another teacher's ID throws AuthorizationError.
-   * Admin may view any teacher's dashboard data.
-   */
   public async getTeacherDashboardData(teacherId: string): Promise<{
     teacher: Teacher | null;
     classes: ClassEntity[];
@@ -794,22 +1183,21 @@ class DataService {
       );
     }
 
-    const data = this.loadData();
-    const teacher = data.teachers.find(t => t.id === teacherId) || null;
-    const teacherClasses = data.classes
-      .filter(c => c.assignedTeacherId === teacherId || (teacher && teacher.assignedClassIds.includes(c.id)))
-      .map(c => ({
-        ...c,
-        studentCount: data.students.filter(s => s.classId === c.id).length
-      }));
+    const [teacherClasses, allStudents, attendance] = await Promise.all([
+      this.getClasses(),
+      this.getStudents(),
+      this.getAttendance()
+    ]);
+
+    const teacher = await this.getTeacherById(teacherId);
 
     const teacherClassIds = teacherClasses.map(c => c.id);
-    const studentsInTeacherClasses = data.students.filter(s => teacherClassIds.includes(s.classId));
+    const studentsInTeacherClasses = allStudents.filter(s => teacherClassIds.includes(s.classId));
 
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    const todayRecords = data.attendance.filter(r => teacherClassIds.includes(r.classId) && r.date === todayStr);
+    const todayRecords = attendance.filter(r => teacherClassIds.includes(r.classId) && r.date === todayStr);
     const presentCount = todayRecords.filter(r => r.status === 'present').length;
     const totalMarked = todayRecords.length;
     const todayAttendanceRate = totalMarked > 0 ? Math.round((presentCount / totalMarked) * 100) : 0;
@@ -851,10 +1239,18 @@ class DataService {
     };
   }
 
-  /**
-   * Verifies if teacher has permission to access classId.
-   */
   public async canTeacherAccessClass(teacherId: string, classId: string): Promise<boolean> {
+    if (isSupabaseConfigured && supabase) {
+      const { data } = await supabase
+        .from('teacher_classes')
+        .select('id')
+        .eq('teacher_id', teacherId)
+        .eq('class_id', classId)
+        .maybeSingle();
+
+      return !!data;
+    }
+
     const data = this.loadData();
     const teacher = data.teachers.find(t => t.id === teacherId);
     if (!teacher) return false;
