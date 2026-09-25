@@ -188,19 +188,21 @@ When transitioning to production with **Supabase PostgreSQL** or **Firebase Fire
 
 ---
 
-## 🔄 Future Backend Migration Plan
+## 🔄 Backend Migration Plan (Supabase Auth + PostgreSQL + RLS)
 
-The application was designed with clean architectural boundaries. React components **never** access the storage or database directly.
+The application was designed with clean architectural boundaries. React components **never** access storage or the database directly, interacting solely through typed service contracts in `src/services/dataService.ts` and `src/services/authService.ts`.
 
-All UI components interact solely through `src/services/dataService.ts`:
-- `getTeachers()`, `createTeacher()`, `updateTeacher()`, `deleteTeacher()`
-- `getClasses()`, `createClass()`, `updateClass()`, `deleteClass()`
-- `getStudents()`, `createStudent()`, `updateStudent()`, `deleteStudent()`
-- `getAttendance()`, `saveAttendance()`, `getDashboardStats()`
+Comprehensive backend architecture and implementation specifications are prepared in:
+- **Migration Plan & Database Design**: [`docs/BACKEND_MIGRATION_PLAN.md`](./docs/BACKEND_MIGRATION_PLAN.md)
+- **Supabase PostgreSQL Schema & RLS Policies**: [`supabase/migrations/20260925000001_initial_schema.sql`](./supabase/migrations/20260925000001_initial_schema.sql)
+- **Baseline Seed Data**: [`supabase/seed.sql`](./supabase/seed.sql)
+- **Environment Template**: [`.env.example`](./.env.example)
 
-When migrating to **Firebase Firestore** or **Supabase PostgreSQL**:
-1. Replace the internal method implementations inside `src/services/dataService.ts` and `src/services/authService.ts`.
-2. The UI components and pages require **zero** structural refactoring.
+When cutover is initiated:
+1. Provision Supabase project and apply the PostgreSQL migration (`20260925000001_initial_schema.sql`).
+2. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Vercel environment variables.
+3. Replace the internal method implementations inside `src/services/dataService.ts` with Supabase client queries.
+4. The React UI components, routing, and pages require **zero** structural modifications.
 
 ---
 
