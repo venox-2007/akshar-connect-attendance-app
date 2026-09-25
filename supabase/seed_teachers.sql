@@ -2,11 +2,13 @@
 -- AKSHAR CONNECT — SEED TEACHER AUTH ACCOUNTS & PROFILES
 -- Creates confirmed Supabase Auth users with password 'teacher123'
 -- and links them to the four official educators and classes.
+-- Compatible with Supabase generated columns (updates email_confirmed_at).
 -- ==============================================================================
 
 -- 1. Confirm Riya Patil (tch-1 -> 3-A)
 UPDATE auth.users
-SET email_confirmed_at = NOW(), confirmed_at = NOW(), encrypted_password = crypt('teacher123', gen_salt('bf'))
+SET email_confirmed_at = NOW(),
+    encrypted_password = crypt('teacher123', gen_salt('bf'))
 WHERE email = 'riya.patil@aksharpaaul.org';
 
 INSERT INTO public.profiles (id, email, name, role, teacher_id)
@@ -50,7 +52,8 @@ BEGIN
         );
     ELSE
         UPDATE auth.users
-        SET email_confirmed_at = NOW(), confirmed_at = NOW(), encrypted_password = crypt('teacher123', gen_salt('bf'))
+        SET email_confirmed_at = NOW(),
+            encrypted_password = crypt('teacher123', gen_salt('bf'))
         WHERE email = 'vikram.kulkarni@aksharpaaul.org';
     END IF;
 END $$;
@@ -96,7 +99,8 @@ BEGIN
         );
     ELSE
         UPDATE auth.users
-        SET email_confirmed_at = NOW(), confirmed_at = NOW(), encrypted_password = crypt('teacher123', gen_salt('bf'))
+        SET email_confirmed_at = NOW(),
+            encrypted_password = crypt('teacher123', gen_salt('bf'))
         WHERE email = 'anita.sharma@aksharpaaul.org';
     END IF;
 END $$;
@@ -142,7 +146,8 @@ BEGIN
         );
     ELSE
         UPDATE auth.users
-        SET email_confirmed_at = NOW(), confirmed_at = NOW(), encrypted_password = crypt('teacher123', gen_salt('bf'))
+        SET email_confirmed_at = NOW(),
+            encrypted_password = crypt('teacher123', gen_salt('bf'))
         WHERE email = 'suresh.pawar@aksharpaaul.org';
     END IF;
 END $$;
