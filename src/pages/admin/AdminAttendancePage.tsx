@@ -39,11 +39,11 @@ export const AdminAttendancePage: React.FC = () => {
 
   if (classes.length === 0) {
     return (
-      <div className="p-8 text-center bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800">
-        <h3 className="text-base font-bold text-slate-800 dark:text-white">
+      <div className="p-8 text-center bg-white rounded-lg border border-slate-200">
+        <h3 className="text-sm font-bold text-slate-800">
           No Classes Created Yet
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Create a class first from the Classes page before recording attendance.
         </p>
       </div>
@@ -56,13 +56,13 @@ export const AdminAttendancePage: React.FC = () => {
       : classes[0].id;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+    <div className="space-y-4">
+      <div className="pb-3 border-b border-slate-200">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">
           {t('attendance.title')}
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          Administrator view: Take or modify attendance across any learning center and class.
+        <p className="text-xs text-slate-500 mt-0.5">
+          Administrative attendance register — record, modify, or verify class attendance sessions
         </p>
       </div>
 

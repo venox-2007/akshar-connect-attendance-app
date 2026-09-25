@@ -1,7 +1,7 @@
 export interface CsvExportRow {
   date: string;
   className: string;
-  learningCenter: string;
+  learningCenter?: string;
   studentName: string;
   rollNumber: string;
   gender: string;

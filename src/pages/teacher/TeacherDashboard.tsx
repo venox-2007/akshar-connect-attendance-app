@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   School,
   Users,
@@ -7,12 +7,14 @@ import {
   Clock,
   ArrowRight,
   CalendarCheck,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
 import { dataService } from '../../services/dataService';
-import { ClassAttendanceSummary, ClassEntity } from '../../types';
+import { ClassAttendanceSummary, ClassEntity, AttendanceRecord, Student } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
 
@@ -35,17 +37,31 @@ export const TeacherDashboard: React.FC = () => {
     todayAttendanceRate: 0
   });
   const [classSummaries, setClassSummaries] = useState<ClassAttendanceSummary[]>([]);
+  const [recentRecords, setRecentRecords] = useState<AttendanceRecord[]>([]);
+  const [studentsMap, setStudentsMap] = useState<Record<string, Student>>({});
 
   useEffect(() => {
     let isMounted = true;
     const loadDashboard = async () => {
       if (!user?.teacherId) return;
       try {
-        const result = await dataService.getTeacherDashboardData(user.teacherId);
+        const [dashResult, attendances, students] = await Promise.all([
+          dataService.getTeacherDashboardData(user.teacherId),
+          dataService.getAttendance(),
+          dataService.getStudents()
+        ]);
+
         if (!isMounted) return;
-        setClasses(result.classes);
-        setStats(result.stats);
-        setClassSummaries(result.classSummaries);
+        setClasses(dashResult.classes);
+        setStats(dashResult.stats);
+        setClassSummaries(dashResult.classSummaries);
+        setRecentRecords(attendances.slice(0, 8));
+
+        const sMap: Record<string, Student> = {};
+        students.forEach(s => {
+          sMap[s.id] = s;
+        });
+        setStudentsMap(sMap);
       } catch (err) {
         console.error('Failed to load teacher dashboard', err);
       } finally {
@@ -63,198 +79,317 @@ export const TeacherDashboard: React.FC = () => {
     return <LoadingSpinner message="Loading dashboard..." />;
   }
 
+  const todayFormatted = new Date().toLocaleDateString('en-IN', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 p-6 sm:p-8 text-white shadow-lg shadow-teal-700/20 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="relative z-10 max-w-2xl">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-teal-50 mb-3">
-            Akshar Paaul Educational NGO &bull; {t('roles.TEACHER')}
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {t('dashboard.welcome')}, {user?.name}!
-          </h1>
-          <p className="text-sm sm:text-base text-teal-100 mt-2 leading-relaxed">
-            Record attendance quickly and monitor your learning center children today.
+      {/* Institutional Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Teacher Dashboard
+            </h1>
+            <span className="text-xs px-2 py-0.5 rounded font-medium bg-teal-50 text-teal-800 border border-teal-200">
+              {user?.name}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Akshar Paaul Educational Portal &bull; Daily Attendance Operations
           </p>
         </div>
-        <div className="relative z-10 hidden sm:flex shrink-0">
-          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 shadow-lg border border-white/20 flex items-center justify-center">
-            <img src="/logo.png" alt="Akshar Paaul Logo" className="w-full h-full object-contain" />
-          </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-md font-medium">
+          <Calendar className="w-3.5 h-3.5 text-slate-500" />
+          <span>Session: {todayFormatted}</span>
         </div>
-        {/* Decorative circle */}
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metrics Summary Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Assigned Classes */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
-            <School className="w-6 h-6" />
-          </div>
+        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
               {t('dashboard.assignedClasses')}
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+            <p className="text-2xl font-bold text-slate-900 mt-1">
               {stats.assignedClassesCount}
             </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Assigned to you</p>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700">
+            <School className="w-4 h-4" />
           </div>
         </div>
 
         {/* Total Students */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-            <Users className="w-6 h-6" />
-          </div>
+        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
               {t('dashboard.totalStudents')}
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+            <p className="text-2xl font-bold text-slate-900 mt-1">
               {stats.totalStudentsCount}
             </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Across assigned classes</p>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700">
+            <Users className="w-4 h-4" />
           </div>
         </div>
 
         {/* Classes Marked Today */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
+        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {t('dashboard.statusMarked')}
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Today's Submission
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+            <p className="text-2xl font-bold text-slate-900 mt-1">
               {stats.todayMarkedClassesCount} / {stats.assignedClassesCount}
             </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {stats.todayMarkedClassesCount === stats.assignedClassesCount && stats.assignedClassesCount > 0
+                ? 'All completed'
+                : 'Pending completion'}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700">
+            <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
 
         {/* Attendance Rate */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
-            <CalendarCheck className="w-6 h-6" />
-          </div>
+        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
               {t('dashboard.attendanceRate')}
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+            <p className="text-2xl font-bold text-slate-900 mt-1">
               {stats.todayAttendanceRate}%
             </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Today's present ratio</p>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700">
+            <CalendarCheck className="w-4 h-4" />
           </div>
         </div>
       </div>
 
-      {/* Assigned Classes Section */}
-      <div className="space-y-4">
+      {/* Assigned Classes - Practical Attendance Cards */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <School className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-            <span>{t('dashboard.assignedClasses')}</span>
+          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+            <School className="w-4 h-4 text-teal-700" />
+            <span>Assigned Classes & Attendance Action</span>
           </h2>
+          <Link
+            to="/teacher/classes"
+            className="text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline flex items-center gap-1"
+          >
+            <span>View Class Rosters</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
         {classes.length === 0 ? (
-          <div className="p-8 text-center rounded-3xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800">
-            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-              No classes currently assigned. Please contact the administrator.
+          <div className="p-8 text-center rounded-lg bg-white border border-slate-200">
+            <AlertCircle className="w-7 h-7 text-amber-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700">
+              No classes currently assigned.
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Please contact the administrator to assign you to active class rosters.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {classSummaries.map(item => (
-              <div
-                key={item.classId}
-                className="bg-white dark:bg-slate-850 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:border-teal-500/50 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        {item.className}
-                      </h3>
+            {classSummaries.map(item => {
+              const matchedClass = classes.find(c => c.id === item.classId);
+              return (
+                <div
+                  key={item.classId}
+                  className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900">
+                            Class {item.className}
+                          </h3>
+                          {matchedClass?.grade && (
+                            <span className="text-xs px-2 py-0.5 rounded font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                              Grade {matchedClass.grade}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {item.totalStudents} Students Enrolled
+                        </p>
+                      </div>
+
+                      {item.isMarkedToday ? (
+                        <Badge variant="success">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Marked Today
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning">
+                          <Clock className="w-3 h-3" />
+                          Attendance Pending
+                        </Badge>
+                      )}
                     </div>
+
+                    {/* Class Stats Summary */}
                     {item.isMarkedToday ? (
-                      <Badge variant="success">
-                        <CheckCircle2 className="w-3 h-3" />
-                        {t('dashboard.statusMarked')}
-                      </Badge>
+                      <div className="my-3 p-3 rounded-md bg-slate-50 border border-slate-200 grid grid-cols-4 gap-2 text-center text-xs">
+                        <div>
+                          <span className="text-slate-400 block text-[10px] font-medium uppercase">
+                            Enrolled
+                          </span>
+                          <span className="font-semibold text-slate-700">
+                            {item.totalStudents}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-emerald-700 block text-[10px] font-medium uppercase">
+                            Present
+                          </span>
+                          <span className="font-semibold text-emerald-800">
+                            {item.presentCount}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-rose-700 block text-[10px] font-medium uppercase">
+                            Absent
+                          </span>
+                          <span className="font-semibold text-rose-800">
+                            {item.absentCount}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-teal-700 block text-[10px] font-medium uppercase">
+                            Rate
+                          </span>
+                          <span className="font-semibold text-teal-800">
+                            {item.percentage}%
+                          </span>
+                        </div>
+                      </div>
                     ) : (
-                      <Badge variant="warning">
-                        <Clock className="w-3 h-3" />
-                        {t('dashboard.statusPending')}
-                      </Badge>
+                      <div className="my-3 p-3 rounded-md bg-amber-50/60 border border-amber-200 text-xs flex items-center justify-between text-amber-800">
+                        <span>Attendance has not been recorded yet today.</span>
+                        <span className="font-semibold text-slate-700">
+                          {item.totalStudents} awaiting
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Attendance Stats bar */}
-                  {item.isMarkedToday ? (
-                    <div className="my-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-slate-400 block text-[10px] font-semibold uppercase">
-                          {t('attendance.totalStudents')}
-                        </span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">
-                          {item.totalStudents}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-emerald-600 dark:text-emerald-400 block text-[10px] font-semibold uppercase">
-                          {t('attendance.present')}
-                        </span>
-                        <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                          {item.presentCount}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-rose-600 dark:text-rose-400 block text-[10px] font-semibold uppercase">
-                          {t('attendance.absent')}
-                        </span>
-                        <span className="font-bold text-rose-700 dark:text-rose-300">
-                          {item.absentCount}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-teal-600 dark:text-teal-400 block text-[10px] font-semibold uppercase">
-                          {t('dashboard.attendanceRate')}
-                        </span>
-                        <span className="font-bold text-teal-700 dark:text-teal-300">
-                          {item.percentage}%
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="my-4 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 flex items-center justify-between text-xs">
-                      <span className="text-amber-800 dark:text-amber-300 font-medium">
-                        {t('dashboard.noAttendanceToday')}
+                  <div className="pt-2 flex items-center gap-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/teacher/attendance?classId=${item.classId}`)}
+                      className={`flex-1 py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                        item.isMarkedToday
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                          : 'bg-teal-700 hover:bg-teal-800 text-white shadow-sm'
+                      }`}
+                    >
+                      <span>
+                        {item.isMarkedToday ? 'Edit Today Attendance' : 'Take Attendance Now'}
                       </span>
-                      <span className="font-bold text-slate-600 dark:text-slate-400">
-                        {item.totalStudents} {t('classes.studentsCount').toLowerCase()}
-                      </span>
-                    </div>
-                  )}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    <Link
+                      to="/teacher/classes"
+                      className="py-2 px-3 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+                    >
+                      Roster
+                    </Link>
+                  </div>
                 </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/teacher/attendance?classId=${item.classId}`)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>{t('dashboard.takeAttendanceBtn')}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
+      </div>
+
+      {/* Recent Attendance Records Table */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+            <FileText className="w-4 h-4 text-teal-700" />
+            <span>Recent Class Attendance Log</span>
+          </h2>
+          <Link
+            to="/teacher/history"
+            className="text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline flex items-center gap-1"
+          >
+            <span>View Full History</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+          {recentRecords.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-500">
+              No recent attendance records found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-2.5 px-4">Date</th>
+                    <th className="py-2.5 px-4">Class</th>
+                    <th className="py-2.5 px-4">Roll No</th>
+                    <th className="py-2.5 px-4">Student Name</th>
+                    <th className="py-2.5 px-4">Status</th>
+                    <th className="py-2.5 px-4">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {recentRecords.map(record => {
+                    const student = studentsMap[record.studentId];
+                    const matchedClass = classes.find(c => c.id === record.classId);
+                    return (
+                      <tr key={record.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-2.5 px-4 font-mono text-slate-700">{record.date}</td>
+                        <td className="py-2.5 px-4 font-semibold text-slate-900">
+                          {matchedClass ? matchedClass.name : record.classId}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono text-slate-600">
+                          {student?.rollNumber || '—'}
+                        </td>
+                        <td className="py-2.5 px-4 font-medium text-slate-900">
+                          {student?.name || 'Unknown Student'}
+                        </td>
+                        <td className="py-2.5 px-4">
+                          {record.status === 'present' ? (
+                            <Badge variant="success">Present</Badge>
+                          ) : (
+                            <Badge variant="danger">Absent</Badge>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-4 text-slate-500 italic">
+                          {record.notes || '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

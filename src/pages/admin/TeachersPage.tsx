@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  GraduationCap,
   Plus,
   Edit,
   Trash2,
   Search,
   Phone,
   Mail,
-  School,
-  CheckCircle,
-  XCircle,
-  X
+  School
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { dataService } from '../../services/dataService';
@@ -169,136 +165,144 @@ export const TeachersPage: React.FC = () => {
   if (loading) return <LoadingSpinner message="Loading teachers..." />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page Title & Add Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
             {t('teachers.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {t('teachers.subtitle')}
+          <p className="text-xs text-slate-500 mt-0.5">
+            Educator directory, credentials, contact details, and class assignments
           </p>
         </div>
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
+          className="px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>{t('teachers.addTeacher')}</span>
         </button>
       </div>
 
       {/* Search Toolbar */}
-      <div className="bg-white dark:bg-slate-850 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search teachers by name, email, phone..."
-            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-700 focus:border-teal-700"
           />
         </div>
-        <div className="text-xs text-slate-500 font-semibold">
-          {filteredTeachers.length} Teachers
+        <div className="text-xs text-slate-500 font-medium">
+          Showing {filteredTeachers.length} of {teachers.length} Teachers
         </div>
       </div>
 
-      {/* Teachers Cards Grid */}
+      {/* Teachers Data Table */}
       {filteredTeachers.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-500">
+        <div className="p-8 text-center bg-white rounded-lg border border-slate-200">
+          <p className="text-xs font-semibold text-slate-500">
             {t('teachers.noTeachers')}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredTeachers.map(teacher => (
-            <div
-              key={teacher.id}
-              className="bg-white dark:bg-slate-850 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:border-teal-500/50 transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-sm shrink-0">
-                      {teacher.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="py-2.5 px-4">Teacher Name</th>
+                  <th className="py-2.5 px-4">Contact Information</th>
+                  <th className="py-2.5 px-4">Assigned Classes</th>
+                  <th className="py-2.5 px-4 text-center w-28">Status</th>
+                  <th className="py-2.5 px-4 text-right w-24">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filteredTeachers.map(teacher => (
+                  <tr key={teacher.id} className="hover:bg-slate-50/80 transition-colors">
+                    {/* Teacher Name & Qualification */}
+                    <td className="py-2.5 px-4">
+                      <div className="font-semibold text-slate-900">
                         {teacher.name}
-                      </h3>
-                      <p className="text-xs text-slate-400">{teacher.qualification || 'Educator'}</p>
-                    </div>
-                  </div>
-                  <Badge variant={teacher.status === 'active' ? 'success' : 'neutral'}>
-                    {teacher.status === 'active' ? t('common.active') : t('common.inactive')}
-                  </Badge>
-                </div>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {teacher.qualification || 'Educator'}
+                      </div>
+                    </td>
 
-                <div className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="font-mono text-[11px]">{teacher.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{teacher.phone}</span>
-                  </div>
-                </div>
+                    {/* Contact */}
+                    <td className="py-2.5 px-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-mono text-[11px]">
+                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{teacher.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500 mt-0.5 text-[11px]">
+                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{teacher.phone}</span>
+                      </div>
+                    </td>
 
-                {/* Assigned Classes tags */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    {t('teachers.assignedClasses')}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {teacher.assignedClassIds && teacher.assignedClassIds.length > 0 ? (
-                      teacher.assignedClassIds.map(clsId => {
-                        const cls = classMap.get(clsId);
-                        return (
-                          <span
-                            key={clsId}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800"
-                          >
-                            <School className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                            <span>{cls?.name || clsId}</span>
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">
-                        {t('common.unassigned')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+                    {/* Assigned Classes */}
+                    <td className="py-2.5 px-4">
+                      <div className="flex flex-wrap gap-1">
+                        {teacher.assignedClassIds && teacher.assignedClassIds.length > 0 ? (
+                          teacher.assignedClassIds.map(clsId => {
+                            const cls = classMap.get(clsId);
+                            return (
+                              <span
+                                key={clsId}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-teal-50 text-teal-800 border border-teal-200"
+                              >
+                                <School className="w-3 h-3 text-teal-700" />
+                                <span>{cls?.name || clsId}</span>
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-slate-400 italic">No classes assigned</span>
+                        )}
+                      </div>
+                    </td>
 
-              {/* Action Buttons */}
-              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleOpenEdit(teacher)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
-                >
-                  <Edit className="w-3.5 h-3.5 text-teal-600" />
-                  <span>{t('common.edit')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTeacherToDelete(teacher)}
-                  className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{t('common.delete')}</span>
-                </button>
-              </div>
-            </div>
-          ))}
+                    {/* Status */}
+                    <td className="py-2.5 px-4 text-center">
+                      <Badge variant={teacher.status === 'active' ? 'success' : 'neutral'}>
+                        {teacher.status === 'active' ? t('common.active') : t('common.inactive')}
+                      </Badge>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-2.5 px-4 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(teacher)}
+                          className="p-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors"
+                          title={t('common.edit')}
+                        >
+                          <Edit className="w-3.5 h-3.5 text-slate-600" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTeacherToDelete(teacher)}
+                          className="p-1 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -312,7 +316,7 @@ export const TeachersPage: React.FC = () => {
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 {t('teachers.name')} *
               </label>
               <input
@@ -321,13 +325,13 @@ export const TeachersPage: React.FC = () => {
                 onChange={e => setName(e.target.value)}
                 required
                 placeholder="e.g. Suman Deshmukh"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('teachers.email')} *
                 </label>
                 <input
@@ -336,12 +340,12 @@ export const TeachersPage: React.FC = () => {
                   onChange={e => setEmail(e.target.value)}
                   required
                   placeholder="suman.deshmukh@aksharpaaul.org"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('teachers.phone')} *
                 </label>
                 <input
@@ -350,14 +354,14 @@ export const TeachersPage: React.FC = () => {
                   onChange={e => setPhone(e.target.value)}
                   required
                   placeholder="+91 98205 11223"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('teachers.qualification')}
                 </label>
                 <input
@@ -365,18 +369,18 @@ export const TeachersPage: React.FC = () => {
                   value={qualification}
                   onChange={e => setQualification(e.target.value)}
                   placeholder="e.g. B.Ed, MA English"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('teachers.status')}
                 </label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as 'active' | 'inactive')}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 >
                   <option value="active">{t('common.active')}</option>
                   <option value="inactive">{t('common.inactive')}</option>
@@ -386,25 +390,25 @@ export const TeachersPage: React.FC = () => {
 
             {/* Assign Classes */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 {t('teachers.assignedClasses')}
               </label>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 rounded-md border border-slate-300 bg-white">
                 {classes.map(cls => (
                   <label
                     key={cls.id}
-                    className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-xs"
+                    className="flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs"
                   >
                     <input
                       type="checkbox"
                       checked={selectedClassIds.includes(cls.id)}
                       onChange={() => toggleClassSelection(cls.id)}
-                      className="rounded text-teal-600 focus:ring-teal-500"
+                      className="rounded text-teal-700 focus:ring-teal-700"
                     />
-                    <span className="font-medium text-slate-800 dark:text-slate-200">
-                      {cls.name}
+                    <span className="font-semibold text-slate-900">
+                      Class {cls.name}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[11px] text-slate-500">
                       ({cls.grade})
                     </span>
                   </label>
@@ -412,19 +416,19 @@ export const TeachersPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-700 hover:bg-teal-800 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50 transition-colors"
               >
                 {submitting ? 'Saving...' : t('common.save')}
               </button>

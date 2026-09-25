@@ -6,8 +6,6 @@ import {
   Trash2,
   Search,
   Filter,
-  Phone,
-  School,
   X
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
@@ -184,55 +182,55 @@ export const StudentsPage: React.FC = () => {
   if (loading) return <LoadingSpinner message="Loading student directory..." />;
 
   return (
-    <div className="space-y-6">
-      {/* Title & Add Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* Page Title & Add Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
             {t('students.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {t('students.subtitle')}
+          <p className="text-xs text-slate-500 mt-0.5">
+            Student roster, enrollment credentials, guardian contacts, and status
           </p>
         </div>
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
+          className="px-3.5 py-2 rounded-md bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>{t('students.addStudent')}</span>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-slate-850 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Class Filter Dropdown */}
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <select
             value={selectedClassFilter}
             onChange={e => setSelectedClassFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-800 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
           >
             <option value="all">{t('students.allClasses')}</option>
             {classes.map(c => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.grade})
+                Class {c.name} {c.grade ? `(${c.grade})` : ''}
               </option>
             ))}
           </select>
         </div>
 
         {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t('students.searchPlaceholder')}
-            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
           />
           {searchQuery && (
             <button
@@ -244,84 +242,86 @@ export const StudentsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="text-xs font-semibold text-slate-500 text-right">
-          {filteredStudents.length} of {students.length} Enrolled
+        <div className="text-xs text-slate-500 font-medium text-right">
+          Showing {filteredStudents.length} of {students.length} Enrolled
         </div>
       </div>
 
-      {/* Students Table */}
+      {/* Students Data Table */}
       {filteredStudents.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-500">
+        <div className="p-8 text-center bg-white rounded-lg border border-slate-200">
+          <p className="text-xs font-semibold text-slate-500">
             {t('students.noStudents')}
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-850 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">{t('students.rollNo')}</th>
-                  <th className="py-3 px-4">{t('students.name')}</th>
-                  <th className="py-3 px-4">{t('students.class')}</th>
-                  <th className="py-3 px-4 hidden md:table-cell">{t('students.gender')}</th>
-                  <th className="py-3 px-4 hidden lg:table-cell">{t('students.guardianName')}</th>
-                  <th className="py-3 px-4 hidden sm:table-cell">{t('students.guardianPhone')}</th>
-                  <th className="py-3 px-4">{t('students.status')}</th>
-                  <th className="py-3 px-4 text-right">{t('teachers.actions')}</th>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 w-24">{t('students.rollNo')}</th>
+                  <th className="py-2.5 px-4">{t('students.name')}</th>
+                  <th className="py-2.5 px-4 w-28">{t('students.class')}</th>
+                  <th className="py-2.5 px-4 hidden md:table-cell w-20">{t('students.gender')}</th>
+                  <th className="py-2.5 px-4 hidden lg:table-cell">{t('students.guardianName')}</th>
+                  <th className="py-2.5 px-4 hidden sm:table-cell w-36">{t('students.guardianPhone')}</th>
+                  <th className="py-2.5 px-4 text-center w-24">{t('students.status')}</th>
+                  <th className="py-2.5 px-4 text-right w-20">{t('teachers.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200">
                 {filteredStudents.map(student => {
                   const cls = classMap.get(student.classId);
                   return (
                     <tr
                       key={student.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                      className="hover:bg-slate-50/80 transition-colors"
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-4 font-mono font-medium text-slate-700">
                         {student.rollNumber}
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                      <td className="py-2.5 px-4 font-semibold text-slate-900">
                         {student.name}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-4">
+                        <span className="font-medium text-slate-800">
                           {cls?.name || student.classId}
                         </span>
-                        <span className="block text-[10px] text-slate-400">
-                          {cls?.grade}
-                        </span>
+                        {cls?.grade && (
+                          <span className="block text-[10px] text-slate-400">
+                            {cls.grade}
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3 px-4 hidden md:table-cell capitalize text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-4 hidden md:table-cell capitalize text-slate-600">
                         {student.gender}
                       </td>
-                      <td className="py-3 px-4 hidden lg:table-cell text-slate-600 dark:text-slate-400">
-                        {student.guardianName || '-'}
+                      <td className="py-2.5 px-4 hidden lg:table-cell text-slate-600">
+                        {student.guardianName || '—'}
                       </td>
-                      <td className="py-3 px-4 hidden sm:table-cell font-mono text-[11px] text-slate-500">
-                        {student.guardianPhone || '-'}
+                      <td className="py-2.5 px-4 hidden sm:table-cell font-mono text-[11px] text-slate-600">
+                        {student.guardianPhone || '—'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 px-4 text-center">
                         <Badge variant={student.status === 'active' ? 'success' : 'neutral'} size="sm">
                           {student.status === 'active' ? t('common.active') : t('common.inactive')}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-2.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(student)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-slate-800 transition-colors"
+                            className="p-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors"
                             title={t('common.edit')}
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <Edit className="w-3.5 h-3.5 text-slate-600" />
                           </button>
                           <button
                             type="button"
                             onClick={() => setStudentToDelete(student)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            className="p-1 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
                             title={t('common.delete')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -347,7 +347,7 @@ export const StudentsPage: React.FC = () => {
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 {t('students.name')} *
               </label>
               <input
@@ -356,13 +356,13 @@ export const StudentsPage: React.FC = () => {
                 onChange={e => setName(e.target.value)}
                 required
                 placeholder="e.g. Aarav Patil"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.rollNo')} *
                 </label>
                 <input
@@ -371,23 +371,23 @@ export const StudentsPage: React.FC = () => {
                   onChange={e => setRollNumber(e.target.value)}
                   required
                   placeholder="e.g. 3A-31"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.class')} *
                 </label>
                 <select
                   value={classId}
                   onChange={e => setClassId(e.target.value)}
                   required
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 >
                   {classes.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.grade})
+                      Class {c.name} {c.grade ? `(${c.grade})` : ''}
                     </option>
                   ))}
                 </select>
@@ -396,13 +396,13 @@ export const StudentsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.gender')}
                 </label>
                 <select
                   value={gender}
                   onChange={e => setGender(e.target.value as Gender)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 >
                   <option value="male">{t('common.male')}</option>
                   <option value="female">{t('common.female')}</option>
@@ -411,13 +411,13 @@ export const StudentsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.status')}
                 </label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as UserStatus)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 >
                   <option value="active">{t('common.active')}</option>
                   <option value="inactive">{t('common.inactive')}</option>
@@ -427,7 +427,7 @@ export const StudentsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.guardianName')}
                 </label>
                 <input
@@ -435,12 +435,12 @@ export const StudentsPage: React.FC = () => {
                   value={guardianName}
                   onChange={e => setGuardianName(e.target.value)}
                   placeholder="e.g. Sunita Patil (Mother)"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   {t('students.guardianPhone')}
                 </label>
                 <input
@@ -448,24 +448,24 @@ export const StudentsPage: React.FC = () => {
                   value={guardianPhone}
                   onChange={e => setGuardianPhone(e.target.value)}
                   placeholder="+91 97654 11223"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-700 hover:bg-teal-800 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50 transition-colors"
               >
                 {submitting ? 'Saving...' : t('common.save')}
               </button>

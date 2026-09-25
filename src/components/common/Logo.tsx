@@ -17,38 +17,38 @@ export const Logo: React.FC<LogoProps> = ({
   const { t } = useTranslation();
 
   const imgContainerSizes = {
-    sm: 'w-8 h-8 p-0.5',
-    md: 'w-11 h-11 p-1',
-    lg: 'w-16 h-16 p-1.5',
-    xl: 'w-24 h-24 p-2'
+    sm: 'w-7 h-7 p-0.5',
+    md: 'w-9 h-9 p-0.5',
+    lg: 'w-14 h-14 p-1',
+    xl: 'w-20 h-20 p-1.5'
   };
 
   const titleSizes = {
     sm: 'text-sm font-bold tracking-tight',
-    md: 'text-lg font-bold tracking-tight',
-    lg: 'text-2xl font-black tracking-tight',
-    xl: 'text-3xl font-black tracking-tight'
+    md: 'text-base font-bold tracking-tight',
+    lg: 'text-xl font-bold tracking-tight',
+    xl: 'text-2xl font-bold tracking-tight'
   };
 
   const subtitleSizes = {
     sm: 'text-[10px]',
     md: 'text-xs',
-    lg: 'text-sm',
-    xl: 'text-base'
+    lg: 'text-xs',
+    xl: 'text-sm'
   };
 
   const orgSizes = {
     sm: 'text-[9px]',
-    md: 'text-[10px]',
+    md: 'text-[11px]',
     lg: 'text-xs',
-    xl: 'text-sm'
+    xl: 'text-xs'
   };
 
   if (stacked) {
     return (
       <div className={`flex flex-col items-center text-center ${className}`}>
         {/* Official Akshar Paaul Logo Image */}
-        <div className={`${imgContainerSizes[size]} bg-white rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0 mb-3`}>
+        <div className={`${imgContainerSizes[size]} bg-white rounded-md border border-slate-200 flex items-center justify-center shrink-0 mb-2.5`}>
           <img
             src="/logo.png"
             alt="Akshar Paaul Logo"
@@ -58,15 +58,15 @@ export const Logo: React.FC<LogoProps> = ({
 
         {/* Product & Org Hierarchy */}
         <div>
-          <h1 className={`${titleSizes[size]} text-slate-900 dark:text-white leading-tight font-extrabold`}>
+          <h1 className={`${titleSizes[size]} text-slate-900 leading-tight`}>
             {t('brand.name')}
           </h1>
           {showSubtitle && (
-            <p className={`${subtitleSizes[size]} font-semibold text-teal-600 dark:text-teal-400 mt-0.5`}>
+            <p className={`${subtitleSizes[size]} font-medium text-teal-700 mt-0.5`}>
               {t('brand.subtitle')}
             </p>
           )}
-          <p className={`${orgSizes[size]} text-slate-500 dark:text-slate-400 font-medium mt-0.5`}>
+          <p className={`${orgSizes[size]} text-slate-500 mt-0.5`}>
             {t('brand.ngo')}
           </p>
         </div>
@@ -75,9 +75,9 @@ export const Logo: React.FC<LogoProps> = ({
   }
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-2.5 ${className}`}>
       {/* Official Akshar Paaul Logo Image */}
-      <div className={`${imgContainerSizes[size]} bg-white rounded-xl shadow-xs border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0`}>
+      <div className={`${imgContainerSizes[size]} bg-white rounded-md border border-slate-200 flex items-center justify-center shrink-0`}>
         <img
           src="/logo.png"
           alt="Akshar Paaul Logo"
@@ -87,15 +87,15 @@ export const Logo: React.FC<LogoProps> = ({
 
       {/* Brand Text Hierarchy */}
       <div className="flex flex-col">
-        <span className={`${titleSizes[size]} text-slate-900 dark:text-white leading-tight font-extrabold`}>
+        <span className={`${titleSizes[size]} text-slate-900 leading-tight`}>
           {t('brand.name')}
         </span>
         {showSubtitle && (
-          <span className={`${subtitleSizes[size]} font-semibold text-teal-600 dark:text-teal-400 leading-tight`}>
+          <span className={`${subtitleSizes[size]} font-medium text-teal-700 leading-tight`}>
             {t('brand.subtitle')}
           </span>
         )}
-        <span className={`${orgSizes[size]} text-slate-500 dark:text-slate-400 font-medium leading-tight`}>
+        <span className={`${orgSizes[size]} text-slate-500 leading-tight`}>
           {t('brand.ngo')}
         </span>
       </div>

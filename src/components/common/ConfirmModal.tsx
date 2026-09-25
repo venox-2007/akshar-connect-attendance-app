@@ -33,25 +33,25 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div
-            className={`p-2.5 rounded-xl shrink-0 ${
+            className={`p-2 rounded shrink-0 ${
               isDestructive
-                ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'
-                : 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'
+                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}
           >
-            {isDestructive ? <AlertTriangle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+            {isDestructive ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
           </div>
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+          <p className="text-sm text-slate-600 leading-relaxed">
             {message}
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+        <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            className="px-3.5 py-1.5 text-xs font-medium rounded-md border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             {cancelText || t('common.cancel')}
           </button>
@@ -59,14 +59,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`px-4 py-2 text-sm font-semibold rounded-xl text-white shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2 ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-md text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 ${
               isDestructive
-                ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800'
-                : 'bg-teal-600 hover:bg-teal-700 active:bg-teal-800'
+                ? 'bg-rose-600 hover:bg-rose-700'
+                : 'bg-teal-700 hover:bg-teal-800'
             }`}
           >
             {isLoading && (
-              <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+              <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>

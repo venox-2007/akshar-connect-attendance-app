@@ -16,6 +16,7 @@ import { dataService } from '../../services/dataService';
 import { AttendanceRecord, ClassEntity, Student, AttendanceStatus } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
+import { Badge } from '../../components/common/Badge';
 import { useToast } from '../../hooks/useToast';
 import { formatDateDisplay, formatDateTimeDisplay } from '../../utils/dateUtils';
 import { exportAttendanceToCsv } from '../../utils/exportCsv';
@@ -153,7 +154,6 @@ export const AttendanceHistoryPage: React.FC = () => {
       return {
         date: rec.date,
         className: cls?.name || rec.classId,
-        learningCenter: cls?.learningCenter || '',
         studentName: std?.name || 'Unknown',
         rollNumber: std?.rollNumber || '',
         gender: std?.gender || '',
@@ -171,44 +171,45 @@ export const AttendanceHistoryPage: React.FC = () => {
   if (loading) return <LoadingSpinner message="Loading attendance history..." />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* Title & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
             {t('history.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {t('history.subtitle')}
+          <p className="text-xs text-slate-500 mt-0.5">
+            Audit logs and historical verification of student attendance sessions
           </p>
         </div>
         <button
           type="button"
           onClick={handleExportCsv}
           disabled={filteredRecords.length === 0}
-          className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition-colors flex items-center justify-center gap-2 self-start sm:self-auto disabled:opacity-50"
+          className="px-3.5 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-sm transition-colors flex items-center justify-center gap-1.5 self-start sm:self-auto disabled:opacity-50"
         >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <FileSpreadsheet className="w-3.5 h-3.5 text-teal-700" />
           <span>{t('reports.exportCsv')}</span>
         </button>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-850 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Class filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1">
               {t('classes.name')}
             </label>
             <select
               value={filterClassId}
               onChange={e => setFilterClassId(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-slate-900 text-xs font-medium focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
             >
               <option value="all">{t('history.filterClass')}</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  Class {c.name} {c.grade ? `(${c.grade})` : ''}
                 </option>
               ))}
             </select>
@@ -216,7 +217,7 @@ export const AttendanceHistoryPage: React.FC = () => {
 
           {/* Date filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1">
               {t('attendance.date')}
             </label>
             <div className="relative">
@@ -224,7 +225,7 @@ export const AttendanceHistoryPage: React.FC = () => {
                 type="date"
                 value={filterDate}
                 onChange={e => setFilterDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-slate-900 text-xs font-medium focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
               />
               {filterDate && (
                 <button
@@ -240,13 +241,13 @@ export const AttendanceHistoryPage: React.FC = () => {
 
           {/* Status filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1">
               {t('history.status')}
             </label>
             <select
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-slate-900 text-xs font-medium focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
             >
               <option value="all">{t('history.filterStatus')}</option>
               <option value="present">{t('attendance.present')}</option>
@@ -256,26 +257,26 @@ export const AttendanceHistoryPage: React.FC = () => {
 
           {/* Student name search */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1">
               {t('history.student')}
             </label>
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchStudent}
                 onChange={e => setSearchStudent(e.target.value)}
                 placeholder={t('students.searchPlaceholder')}
-                className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full pl-8 pr-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-900 text-xs placeholder:text-slate-400 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         {/* Filter results info */}
-        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
           <span>
-            Showing <strong>{filteredRecords.length}</strong> matching records
+            Showing <strong className="text-slate-900">{filteredRecords.length}</strong> matching records
           </span>
           {(filterClassId !== 'all' || filterDate || filterStatus !== 'all' || searchStudent) && (
             <button
@@ -286,9 +287,9 @@ export const AttendanceHistoryPage: React.FC = () => {
                 setFilterStatus('all');
                 setSearchStudent('');
               }}
-              className="text-teal-600 dark:text-teal-400 font-semibold hover:underline"
+              className="text-teal-700 font-medium hover:underline"
             >
-              {t('common.clear')} filters
+              Reset filters
             </button>
           )}
         </div>
@@ -296,27 +297,27 @@ export const AttendanceHistoryPage: React.FC = () => {
 
       {/* History Table */}
       {filteredRecords.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-850 rounded-3xl border border-slate-200 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-500">
+        <div className="p-8 text-center bg-white rounded-lg border border-slate-200">
+          <p className="text-xs font-semibold text-slate-500">
             {t('history.noRecords')}
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-850 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">{t('attendance.date')}</th>
-                  <th className="py-3 px-4">{t('history.student')}</th>
-                  <th className="py-3 px-4">{t('classes.name')}</th>
-                  <th className="py-3 px-4">{t('history.status')}</th>
-                  <th className="py-3 px-4 hidden md:table-cell">{t('history.markedBy')}</th>
-                  <th className="py-3 px-4 hidden lg:table-cell">{t('history.lastUpdated')}</th>
-                  <th className="py-3 px-4 text-right">{t('teachers.actions')}</th>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 w-28">{t('attendance.date')}</th>
+                  <th className="py-2.5 px-4">{t('history.student')}</th>
+                  <th className="py-2.5 px-4 w-28">{t('classes.name')}</th>
+                  <th className="py-2.5 px-4 text-center w-28">{t('history.status')}</th>
+                  <th className="py-2.5 px-4 hidden md:table-cell">{t('history.markedBy')}</th>
+                  <th className="py-2.5 px-4 hidden lg:table-cell w-36">{t('history.lastUpdated')}</th>
+                  <th className="py-2.5 px-4 text-right w-16">{t('teachers.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200">
                 {filteredRecords.map(rec => {
                   const student = studentMap.get(rec.studentId);
                   const cls = classMap.get(rec.classId);
@@ -325,59 +326,48 @@ export const AttendanceHistoryPage: React.FC = () => {
                   return (
                     <tr
                       key={rec.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                      className="hover:bg-slate-50/80 transition-colors"
                     >
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-4 font-mono font-medium text-slate-700">
                         {rec.date}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white">
+                      <td className="py-2.5 px-4">
+                        <div className="font-semibold text-slate-900">
                           {student?.name || 'Unknown Student'}
                         </div>
-                        <div className="text-[10px] font-mono text-slate-400">
+                        <div className="text-[10px] font-mono text-slate-500">
                           {student?.rollNumber || rec.studentId}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">
+                      <td className="py-2.5 px-4">
+                        <div className="font-medium text-slate-800">
                           {cls?.name || rec.classId}
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          {cls?.grade}
-                        </div>
+                        {cls?.grade && (
+                          <div className="text-[10px] text-slate-400">
+                            {cls.grade}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            isPresent
-                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                          }`}
-                        >
-                          {isPresent ? (
-                            <CheckCircle2 className="w-3 h-3" />
-                          ) : (
-                            <XCircle className="w-3 h-3" />
-                          )}
-                          <span>
-                            {isPresent ? t('attendance.present') : t('attendance.absent')}
-                          </span>
-                        </span>
+                      <td className="py-2.5 px-4 text-center">
+                        <Badge variant={isPresent ? 'success' : 'danger'}>
+                          {isPresent ? t('attendance.present') : t('attendance.absent')}
+                        </Badge>
                       </td>
-                      <td className="py-3 px-4 hidden md:table-cell text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-4 hidden md:table-cell text-slate-600">
                         {rec.markedBy}
                       </td>
-                      <td className="py-3 px-4 hidden lg:table-cell text-slate-400 font-mono text-[11px]">
+                      <td className="py-2.5 px-4 hidden lg:table-cell text-slate-500 font-mono text-[11px]">
                         {formatDateTimeDisplay(rec.updatedAt)}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2.5 px-4 text-right">
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(rec)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors"
                           title={t('history.editRecord')}
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5 text-slate-600" />
                         </button>
                       </td>
                     </tr>
@@ -400,39 +390,39 @@ export const AttendanceHistoryPage: React.FC = () => {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 {t('history.status')}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setEditingStatus('present')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-1.5 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 ${
                     editingStatus === 'present'
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                      : 'border-slate-300 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{t('attendance.present')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingStatus('absent')}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-1.5 px-3 rounded-md text-xs font-semibold border transition-colors flex items-center justify-center gap-1.5 ${
                     editingStatus === 'absent'
-                      ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                      ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
+                      : 'border-slate-300 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <XCircle className="w-4 h-4" />
+                  <XCircle className="w-3.5 h-3.5" />
                   <span>{t('attendance.absent')}</span>
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Notes / Reason
               </label>
               <textarea
@@ -440,16 +430,16 @@ export const AttendanceHistoryPage: React.FC = () => {
                 onChange={e => setEditingNotes(e.target.value)}
                 placeholder="Optional leave note or explanation..."
                 rows={2}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full p-2.5 rounded-md border border-slate-300 bg-white text-xs text-slate-900 focus:ring-1 focus:ring-teal-700 focus:border-teal-700 focus:outline-none"
               />
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setEditingRecord(null)}
                 disabled={savingEdit}
-                className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 {t('common.cancel')}
               </button>
@@ -457,7 +447,7 @@ export const AttendanceHistoryPage: React.FC = () => {
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={savingEdit}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-teal-700 hover:bg-teal-800 text-white shadow-sm flex items-center gap-1.5 disabled:opacity-50 transition-colors"
               >
                 {savingEdit ? 'Updating...' : t('common.save')}
               </button>

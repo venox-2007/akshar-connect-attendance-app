@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  GraduationCap,
-  School,
-  Users,
-  CheckCircle2,
   CalendarCheck,
   PlusCircle,
   FileSpreadsheet,
   ArrowRight,
   Clock,
-  Sparkles
+  CheckCircle2,
+  Users,
+  GraduationCap,
+  School
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../i18n';
 import { dataService } from '../../services/dataService';
-import { DashboardStats } from '../../types';
+import { DashboardStats, ClassEntity } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
+import { formatDateDisplay, getTodayDateString } from '../../utils/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -26,21 +26,26 @@ export const AdminDashboard: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [classes, setClasses] = useState<ClassEntity[]>([]);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchStats = async () => {
+    const fetchDashboard = async () => {
       try {
-        const data = await dataService.getDashboardStats();
+        const [statsData, classesData] = await Promise.all([
+          dataService.getDashboardStats(),
+          dataService.getClasses()
+        ]);
         if (!isMounted) return;
-        setStats(data);
+        setStats(statsData);
+        setClasses(classesData);
       } catch (err) {
         console.error(err);
       } finally {
         if (isMounted) setLoading(false);
       }
     };
-    fetchStats();
+    fetchDashboard();
     return () => {
       isMounted = false;
     };
@@ -50,258 +55,264 @@ export const AdminDashboard: React.FC = () => {
     return <LoadingSpinner message="Loading admin dashboard..." />;
   }
 
+  const classMap = new Map<string, ClassEntity>();
+  classes.forEach(c => classMap.set(c.id, c));
+
+  const todayStr = getTodayDateString();
+  const classesRecordedCount = stats.classBreakdown.filter(c => c.isMarkedToday).length;
+
   return (
     <div className="space-y-6">
-      {/* Header Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-800 via-teal-700 to-emerald-700 p-6 sm:p-8 text-white shadow-xl shadow-teal-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 backdrop-blur-md text-teal-100 mb-3 border border-white/10">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Akshar Paaul Educational NGO &bull; {t('roles.ADMIN')}</span>
+      {/* Top Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              Administrator Dashboard
+            </h1>
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+              Akshar Paaul NGO
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {t('dashboard.welcome')}, {user?.name}!
-          </h1>
-          <p className="text-xs sm:text-sm text-teal-100 mt-2 leading-relaxed max-w-xl">
-            Monitor real-time student attendance across all 4 learning centers, manage teachers, and review NGO progress.
+          <p className="text-xs text-slate-500 mt-1">
+            Institutional overview and daily attendance recording status.
           </p>
         </div>
-        <div className="relative z-10 hidden sm:flex shrink-0">
-          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 shadow-lg border border-white/20 flex items-center justify-center">
-            <img src="/logo.png" alt="Akshar Paaul Logo" className="w-full h-full object-contain" />
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="text-xs text-slate-500 font-medium px-2.5 py-1.5 rounded-md border border-slate-200 bg-white">
+            Today: <span className="font-semibold text-slate-800">{formatDateDisplay(todayStr)}</span>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/attendance')}
+            className="px-3.5 py-1.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>{t('dashboard.takeAttendanceBtn')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/reports')}
+            className="px-3.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+            <span>{t('nav.reports')}</span>
+          </button>
         </div>
-        <div className="absolute -right-8 -bottom-8 w-56 h-56 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Teachers */}
-        <div
-          onClick={() => navigate('/admin/teachers')}
-          className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-teal-500/50 cursor-pointer transition-all flex items-center gap-4 group"
-        >
-          <div className="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {t('dashboard.totalTeachers')}
-            </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-              {stats.totalTeachers}
-            </p>
+      {/* Structured Metrics Bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-4 rounded-lg bg-white border border-slate-200">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            {t('dashboard.todayAttendance')}
+          </span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-slate-900">
+              {stats.todayAttendance.total > 0 ? `${stats.todayAttendance.percentage}%` : '0%'}
+            </span>
+            <span className="text-xs text-slate-500">
+              {stats.todayAttendance.total > 0
+                ? `(${stats.todayAttendance.present} Present / ${stats.todayAttendance.absent} Absent)`
+                : 'Not Recorded'}
+            </span>
           </div>
         </div>
 
-        {/* Total Classes */}
-        <div
-          onClick={() => navigate('/admin/classes')}
-          className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-teal-500/50 cursor-pointer transition-all flex items-center gap-4 group"
-        >
-          <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
-            <School className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {t('dashboard.totalClasses')}
-            </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-              {stats.totalClasses}
-            </p>
-          </div>
-        </div>
-
-        {/* Total Students */}
-        <div
-          onClick={() => navigate('/admin/students')}
-          className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-teal-500/50 cursor-pointer transition-all flex items-center gap-4 group"
-        >
-          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {t('dashboard.totalStudents')}
-            </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+        <div className="p-4 rounded-lg bg-white border border-slate-200">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            {t('dashboard.totalStudents')}
+          </span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-slate-900">
               {stats.totalStudents}
-            </p>
+            </span>
+            <span className="text-xs text-slate-500">
+              Enrolled students
+            </span>
           </div>
         </div>
 
-        {/* Today's Attendance Rate */}
-        <div
-          onClick={() => navigate('/admin/reports')}
-          className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-teal-500/50 cursor-pointer transition-all flex items-center gap-4 group"
-        >
-          <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
-            <CalendarCheck className="w-6 h-6" />
+        <div className="p-4 rounded-lg bg-white border border-slate-200">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            Classes Recorded Today
+          </span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-slate-900">
+              {classesRecordedCount} / {stats.totalClasses}
+            </span>
+            <span className="text-xs text-slate-500">
+              {classesRecordedCount === stats.totalClasses ? 'Complete' : 'Pending'}
+            </span>
           </div>
+        </div>
+
+        <div className="p-4 rounded-lg bg-white border border-slate-200">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            {t('dashboard.totalTeachers')}
+          </span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-slate-900">
+              {stats.totalTeachers}
+            </span>
+            <span className="text-xs text-slate-500">
+              Active educators
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Primary Section: Today's Attendance by Class Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {t('dashboard.todayAttendance')}
+            <h2 className="text-sm font-semibold text-slate-900">
+              Today's Attendance Status
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Real-time daily attendance register breakdown by class batch
             </p>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">
-                {stats.todayAttendance.total > 0 ? `${stats.todayAttendance.percentage}%` : '0%'}
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                {stats.todayAttendance.total > 0
-                  ? `${stats.todayAttendance.present} / ${stats.todayAttendance.total}`
-                  : t('dashboard.noAttendanceToday')}
-              </span>
-            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Quick Action Shortcuts */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate('/admin/attendance')}
-          className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"
-        >
-          <CalendarCheck className="w-4 h-4" />
-          <span>{t('dashboard.takeAttendanceBtn')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin/teachers')}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold shadow-xs transition-colors flex items-center gap-2"
-        >
-          <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-          <span>{t('teachers.addTeacher')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin/classes')}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold shadow-xs transition-colors flex items-center gap-2"
-        >
-          <School className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-          <span>{t('classes.addClass')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin/students')}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold shadow-xs transition-colors flex items-center gap-2"
-        >
-          <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{t('students.addStudent')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin/reports')}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold shadow-xs transition-colors flex items-center gap-2 ml-auto"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{t('nav.reports')}</span>
-        </button>
-      </div>
-
-      {/* Class-wise Today Attendance Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <School className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-            <span>{t('dashboard.classBreakdown')}</span>
-          </h2>
           <button
             type="button"
             onClick={() => navigate('/admin/history')}
-            className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+            className="text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline flex items-center gap-1"
           >
             <span>{t('dashboard.viewHistoryBtn')}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.classBreakdown.map(cls => (
-            <div
-              key={cls.classId}
-              className="bg-white dark:bg-slate-850 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="py-2.5 px-4">{t('classes.name')}</th>
+                <th className="py-2.5 px-4">{t('classes.grade')}</th>
+                <th className="py-2.5 px-4">{t('classes.assignedTeacher')}</th>
+                <th className="py-2.5 px-4 text-center">{t('attendance.totalStudents')}</th>
+                <th className="py-2.5 px-4 text-center">{t('attendance.present')}</th>
+                <th className="py-2.5 px-4 text-center">{t('attendance.absent')}</th>
+                <th className="py-2.5 px-4 text-center">{t('dashboard.attendanceRate')}</th>
+                <th className="py-2.5 px-4 text-center">Status</th>
+                <th className="py-2.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {stats.classBreakdown.map(cls => {
+                const classEntity = classMap.get(cls.classId);
+                const teacherName = classEntity?.assignedTeacherName || t('common.unassigned');
+
+                return (
+                  <tr key={cls.classId} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900">
                       {cls.className}
-                    </h3>
-                  </div>
-                  {cls.isMarkedToday ? (
-                    <Badge variant="success">
-                      <CheckCircle2 className="w-3 h-3" />
-                      {t('dashboard.statusMarked')}
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning">
-                      <Clock className="w-3 h-3" />
-                      {t('dashboard.statusPending')}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                    <span className="text-slate-500 dark:text-slate-400">
-                      Attendance Progress
-                    </span>
-                    <span className="text-teal-600 dark:text-teal-400 font-bold">
-                      {cls.percentage}%
-                    </span>
-                  </div>
-                  <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-500"
-                      style={{ width: `${cls.percentage}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Stat pills */}
-                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-center text-xs">
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900">
-                    <span className="text-[10px] text-slate-400 font-bold block">
-                      {t('attendance.totalStudents')}
-                    </span>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      {classEntity?.grade || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">
+                      {teacherName}
+                    </td>
+                    <td className="py-3 px-4 text-center text-slate-700">
                       {cls.totalStudents}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30">
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
-                      {t('attendance.present')}
-                    </span>
-                    <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
-                      {cls.presentCount}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-rose-50/50 dark:bg-rose-950/30">
-                    <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold block">
-                      {t('attendance.absent')}
-                    </span>
-                    <span className="font-extrabold text-rose-700 dark:text-rose-300">
-                      {cls.absentCount}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                    </td>
+                    <td className="py-3 px-4 text-center font-semibold text-emerald-700">
+                      {cls.isMarkedToday ? cls.presentCount : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-center font-semibold text-rose-700">
+                      {cls.isMarkedToday ? cls.absentCount : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {cls.isMarkedToday ? (
+                        <span className="font-semibold text-slate-800">
+                          {cls.percentage}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {cls.isMarkedToday ? (
+                        <Badge variant="success">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{t('dashboard.statusMarked')}</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning">
+                          <Clock className="w-3 h-3" />
+                          <span>{t('dashboard.statusPending')}</span>
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/attendance?classId=${cls.classId}`)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                          cls.isMarkedToday
+                            ? 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-50'
+                            : 'bg-teal-700 text-white hover:bg-teal-800'
+                        }`}
+                      >
+                        {cls.isMarkedToday ? 'Review / Edit' : 'Take Attendance'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-              <div className="mt-5 pt-3">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/admin/attendance?classId=${cls.classId}`)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-1.5"
-                >
-                  <CalendarCheck className="w-3.5 h-3.5" />
-                  <span>{t('dashboard.takeAttendanceBtn')}</span>
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* Secondary Administrative Shortcuts Panel */}
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider block mb-3">
+          Administrative Shortcuts
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/attendance')}
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
+            <span>Record Attendance</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/students')}
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <Users className="w-3.5 h-3.5 text-slate-500" />
+            <span>Manage Students</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/classes')}
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <School className="w-3.5 h-3.5 text-slate-500" />
+            <span>Manage Classes</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/teachers')}
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-slate-500" />
+            <span>Manage Teachers</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/reports')}
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5 ml-auto"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export Reports</span>
+          </button>
         </div>
       </div>
     </div>
