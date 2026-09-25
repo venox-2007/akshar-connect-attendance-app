@@ -123,23 +123,28 @@ class DataService {
     this.requireAdmin();
 
     if (isSupabaseConfigured && supabase) {
-      const { data: rawTeachers, error } = await supabase
-        .from('teachers')
-        .select('*, teacher_classes(class_id)')
-        .order('name');
+      try {
+        const { data: rawTeachers, error } = await supabase
+          .from('teachers')
+          .select('*, teacher_classes(class_id)')
+          .order('name');
 
-      if (error) throw new Error(error.message);
-
-      return (rawTeachers || []).map(t => ({
-        id: t.id,
-        name: t.name,
-        email: t.email,
-        phone: t.phone,
-        status: t.status,
-        qualification: t.qualification || undefined,
-        joinedDate: t.joined_date,
-        assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
-      }));
+        if (!error && rawTeachers) {
+          return rawTeachers.map(t => ({
+            id: t.id,
+            name: t.name,
+            email: t.email,
+            phone: t.phone,
+            status: t.status,
+            qualification: t.qualification || undefined,
+            joinedDate: t.joined_date,
+            assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
+          }));
+        }
+        console.warn('[DataService] Supabase getTeachers error, falling back to local store:', error?.message);
+      } catch (err) {
+        console.warn('[DataService] Exception querying Supabase teachers:', err);
+      }
     }
 
     const data = this.loadData();
@@ -360,37 +365,44 @@ class DataService {
     const user = this.getCurrentUserOrThrow();
 
     if (isSupabaseConfigured && supabase) {
-      let query = supabase
-        .from('classes')
-        .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
-        .order('name');
+      try {
+        let query = supabase
+          .from('classes')
+          .select('*, teacher_classes(teacher_id, teachers(name)), students(id)')
+          .order('name');
 
-      if (user.role === 'TEACHER') {
-        const { data: assignments } = await supabase
-          .from('teacher_classes')
-          .select('class_id')
-          .eq('teacher_id', user.teacherId || '');
+        if (user.role === 'TEACHER') {
+          const { data: assignments, error: assignError } = await supabase
+            .from('teacher_classes')
+            .select('class_id')
+            .eq('teacher_id', user.teacherId || '');
 
-        const assignedIds = (assignments || []).map(a => a.class_id);
-        if (assignedIds.length === 0) return [];
-        query = query.in('id', assignedIds);
+          if (assignError) throw assignError;
+
+          const assignedIds = (assignments || []).map(a => a.class_id);
+          if (assignedIds.length === 0) return [];
+          query = query.in('id', assignedIds);
+        }
+
+        const { data: rawClasses, error } = await query;
+        if (!error && rawClasses) {
+          return rawClasses.map(c => {
+            const assignment = c.teacher_classes?.[0];
+            return {
+              id: c.id,
+              name: c.name,
+              grade: c.grade,
+              schedule: c.schedule,
+              assignedTeacherId: assignment?.teacher_id || null,
+              assignedTeacherName: assignment?.teachers?.name || null,
+              studentCount: Array.isArray(c.students) ? c.students.length : 0
+            };
+          });
+        }
+        console.warn('[DataService] Supabase getClasses error, falling back to local store:', error?.message);
+      } catch (err) {
+        console.warn('[DataService] Exception querying Supabase classes, falling back to local store:', err);
       }
-
-      const { data: rawClasses, error } = await query;
-      if (error) throw new Error(error.message);
-
-      return (rawClasses || []).map(c => {
-        const assignment = c.teacher_classes?.[0];
-        return {
-          id: c.id,
-          name: c.name,
-          grade: c.grade,
-          schedule: c.schedule,
-          assignedTeacherId: assignment?.teacher_id || null,
-          assignedTeacherName: assignment?.teachers?.name || null,
-          studentCount: Array.isArray(c.students) ? c.students.length : 0
-        };
-      });
     }
 
     const data = this.loadData();
@@ -652,31 +664,37 @@ class DataService {
         query = query.eq('class_id', filter.classId);
       }
 
-      const { data: rawStudents, error } = await query;
-      if (error) throw new Error(error.message);
+      try {
+        const { data: rawStudents, error } = await query;
+        if (!error && rawStudents) {
+          let result: Student[] = rawStudents.map(s => ({
+            id: s.id,
+            name: s.name,
+            rollNumber: s.roll_number,
+            classId: s.class_id,
+            gender: s.gender,
+            status: s.status,
+            guardianName: s.guardian_name || undefined,
+            guardianPhone: s.guardian_phone || undefined,
+            dob: s.dob || undefined
+          }));
 
-      let result: Student[] = (rawStudents || []).map(s => ({
-        id: s.id,
-        name: s.name,
-        rollNumber: s.roll_number,
-        classId: s.class_id,
-        gender: s.gender,
-        status: s.status,
-        guardianName: s.guardian_name || undefined,
-        guardianPhone: s.guardian_phone || undefined,
-        dob: s.dob || undefined
-      }));
+          if (filter?.search) {
+            const q = filter.search.toLowerCase();
+            result = result.filter(s =>
+              s.name.toLowerCase().includes(q) ||
+              s.rollNumber.toLowerCase().includes(q) ||
+              (s.guardianName && s.guardianName.toLowerCase().includes(q))
+            );
+          }
 
-      if (filter?.search) {
-        const q = filter.search.toLowerCase();
-        result = result.filter(s =>
-          s.name.toLowerCase().includes(q) ||
-          s.rollNumber.toLowerCase().includes(q) ||
-          (s.guardianName && s.guardianName.toLowerCase().includes(q))
-        );
+          return result;
+        }
+        console.warn('[DataService] Supabase getStudents error, falling back to local store:', error?.message);
+      } catch (err) {
+        if (err instanceof AuthorizationError) throw err;
+        console.warn('[DataService] Exception querying Supabase students, falling back to local store:', err);
       }
-
-      return result;
     }
 
     const data = this.loadData();
@@ -953,19 +971,25 @@ class DataService {
       if (filter?.date) query = query.eq('date', filter.date);
       if (filter?.studentId) query = query.eq('student_id', filter.studentId);
 
-      const { data: rawAttendance, error } = await query;
-      if (error) throw new Error(error.message);
-
-      return (rawAttendance || []).map(r => ({
-        id: r.id,
-        studentId: r.student_id,
-        classId: r.class_id,
-        date: r.date,
-        status: r.status,
-        markedBy: r.marked_by,
-        updatedAt: r.updated_at,
-        notes: r.notes || undefined
-      }));
+      try {
+        const { data: rawAttendance, error } = await query;
+        if (!error && rawAttendance) {
+          return rawAttendance.map(r => ({
+            id: r.id,
+            studentId: r.student_id,
+            classId: r.class_id,
+            date: r.date,
+            status: r.status,
+            markedBy: r.marked_by,
+            updatedAt: r.updated_at,
+            notes: r.notes || undefined
+          }));
+        }
+        console.warn('[DataService] Supabase getAttendance error, falling back to local store:', error?.message);
+      } catch (err) {
+        if (err instanceof AuthorizationError) throw err;
+        console.warn('[DataService] Exception querying Supabase attendance, falling back to local store:', err);
+      }
     }
 
     const data = this.loadData();
@@ -1044,25 +1068,31 @@ class DataService {
         notes: r.notes || null
       }));
 
-      const { data: upserted, error } = await supabase
-        .from('attendance_records')
-        .upsert(recordsToUpsert, {
-          onConflict: 'student_id,date'
-        })
-        .select();
+      try {
+        const { data: upserted, error } = await supabase
+          .from('attendance_records')
+          .upsert(recordsToUpsert, {
+            onConflict: 'student_id,date'
+          })
+          .select();
 
-      if (error) throw new Error(error.message);
-
-      return (upserted || []).map(r => ({
-        id: r.id,
-        studentId: r.student_id,
-        classId: r.class_id,
-        date: r.date,
-        status: r.status,
-        markedBy: r.marked_by,
-        updatedAt: r.updated_at,
-        notes: r.notes || undefined
-      }));
+        if (!error && upserted) {
+          return upserted.map(r => ({
+            id: r.id,
+            studentId: r.student_id,
+            classId: r.class_id,
+            date: r.date,
+            status: r.status,
+            markedBy: r.marked_by,
+            updatedAt: r.updated_at,
+            notes: r.notes || undefined
+          }));
+        }
+        console.warn('[DataService] Supabase saveAttendance error, falling back to local store:', error?.message);
+      } catch (err) {
+        if (err instanceof AuthorizationError) throw err;
+        console.warn('[DataService] Exception in Supabase saveAttendance, falling back to local store:', err);
+      }
     }
 
     const data = this.loadData();

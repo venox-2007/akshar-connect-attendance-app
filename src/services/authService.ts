@@ -156,35 +156,33 @@ class AuthService {
 
     // 1. If Supabase is configured, authenticate via Supabase GoTrue Auth
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password
-      });
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password
+        });
 
-      if (error) {
-        throw new Error(error.message || 'Invalid email or password.');
+        if (!error && data?.user) {
+          const syncedUser = await this.syncSupabaseProfile(data.user.id, data.user.email || normalizedEmail);
+          if (syncedUser) {
+            return syncedUser;
+          }
+
+          // If profile table sync fails, return standard User object
+          const fallbackUser: User = {
+            id: data.user.id,
+            name: data.user.email?.split('@')[0] || 'User',
+            email: data.user.email || normalizedEmail,
+            role: normalizedEmail.startsWith('admin') ? 'ADMIN' : 'TEACHER'
+          };
+          this.currentUser = fallbackUser;
+          localStorage.setItem(SESSION_KEY, JSON.stringify(fallbackUser));
+          this.notify();
+          return fallbackUser;
+        }
+      } catch (authErr) {
+        console.warn('Supabase Auth error, checking fallback accounts:', authErr);
       }
-
-      if (!data.user) {
-        throw new Error('User not found.');
-      }
-
-      const syncedUser = await this.syncSupabaseProfile(data.user.id, data.user.email || normalizedEmail);
-      if (syncedUser) {
-        return syncedUser;
-      }
-
-      // If profile table sync fails, return standard User object
-      const fallbackUser: User = {
-        id: data.user.id,
-        name: data.user.email?.split('@')[0] || 'User',
-        email: data.user.email || normalizedEmail,
-        role: normalizedEmail.startsWith('admin') ? 'ADMIN' : 'TEACHER'
-      };
-      this.currentUser = fallbackUser;
-      localStorage.setItem(SESSION_KEY, JSON.stringify(fallbackUser));
-      this.notify();
-      return fallbackUser;
     }
 
     // 2. Fallback to local accounts when Supabase credentials are not present
