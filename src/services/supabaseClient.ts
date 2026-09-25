@@ -9,7 +9,7 @@ const getEnvVar = (key: string): string | undefined => {
   try {
     const globalProcess = (globalThis as any).process;
     if (typeof globalProcess !== 'undefined' && globalProcess.env) {
-      if (globalProcess.env[key]) {
+      if (globalProcess.env[key] !== undefined) {
         return globalProcess.env[key];
       }
       if (typeof window === 'undefined') {

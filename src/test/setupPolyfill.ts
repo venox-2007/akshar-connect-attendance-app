@@ -16,23 +16,7 @@ if (typeof globalThis.localStorage === 'undefined' || !globalThis.localStorage.g
   } as any;
 }
 
-// Load .env into process.env if running under Node test environment
-try {
-  const envPath = path.resolve(process.cwd(), '.env');
-  if (fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf8');
-    for (const line of content.split('\n')) {
-      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-      if (match) {
-        let val = (match[2] || '').trim();
-        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-          val = val.slice(1, -1);
-        }
-        if (!process.env[match[1]]) {
-          process.env[match[1]] = val;
-        }
-      }
-    }
-  }
-} catch (e) {}
+// Ensure RBAC matrix unit test runs deterministically against local store
+process.env.VITE_SUPABASE_URL = '';
+process.env.VITE_SUPABASE_ANON_KEY = '';
 
