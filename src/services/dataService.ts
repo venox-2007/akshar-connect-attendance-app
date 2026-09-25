@@ -161,24 +161,29 @@ class DataService {
     }
 
     if (isSupabaseConfigured && supabase) {
-      const { data: t, error } = await supabase
-        .from('teachers')
-        .select('*, teacher_classes(class_id)')
-        .eq('id', id)
-        .single();
+      try {
+        const { data: t, error } = await supabase
+          .from('teachers')
+          .select('*, teacher_classes(class_id)')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error || !t) return null;
-
-      return {
-        id: t.id,
-        name: t.name,
-        email: t.email,
-        phone: t.phone,
-        status: t.status,
-        qualification: t.qualification || undefined,
-        joinedDate: t.joined_date,
-        assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
-      };
+        if (!error && t) {
+          return {
+            id: t.id,
+            name: t.name,
+            email: t.email,
+            phone: t.phone,
+            status: t.status,
+            qualification: t.qualification || undefined,
+            joinedDate: t.joined_date,
+            assignedClassIds: (t.teacher_classes || []).map((tc: any) => tc.class_id)
+          };
+        }
+        if (!error && !t) {
+          return null;
+        }
+      } catch (err) {}
     }
 
     const data = this.loadData();
@@ -645,31 +650,32 @@ class DataService {
     const user = this.getCurrentUserOrThrow();
 
     if (isSupabaseConfigured && supabase) {
-      let query = supabase.from('students').select('*').order('roll_number');
-
-      if (user.role === 'TEACHER') {
-        const { data: assignments } = await supabase
-          .from('teacher_classes')
-          .select('class_id')
-          .eq('teacher_id', user.teacherId || '');
-
-        const assignedIds = (assignments || []).map(a => a.class_id);
-        if (filter?.classId) {
-          if (!assignedIds.includes(filter.classId)) {
-            throw new AuthorizationError(
-              `Access denied: Educator "${user.name}" cannot view students of unassigned class (${filter.classId}).`
-            );
-          }
-          query = query.eq('class_id', filter.classId);
-        } else {
-          if (assignedIds.length === 0) return [];
-          query = query.in('class_id', assignedIds);
-        }
-      } else if (filter?.classId) {
-        query = query.eq('class_id', filter.classId);
-      }
-
       try {
+        let query = supabase.from('students').select('*').order('roll_number');
+
+        if (user.role === 'TEACHER') {
+          const { data: assignments, error: assignError } = await supabase
+            .from('teacher_classes')
+            .select('class_id')
+            .eq('teacher_id', user.teacherId || '');
+
+          if (assignError) throw assignError;
+
+          const assignedIds = (assignments || []).map(a => a.class_id);
+          if (filter?.classId) {
+            if (!assignedIds.includes(filter.classId)) {
+              throw new AuthorizationError(
+                `Access denied: Educator "${user.name}" cannot view students of unassigned class (${filter.classId}).`
+              );
+            }
+            query = query.eq('class_id', filter.classId);
+          } else {
+            if (assignedIds.length === 0) return [];
+            query = query.in('class_id', assignedIds);
+          }
+        } else if (filter?.classId) {
+          query = query.eq('class_id', filter.classId);
+        }
         const { data: rawStudents, error } = await query;
         if (!error && rawStudents) {
           let result: Student[] = rawStudents.map(s => ({
@@ -955,35 +961,37 @@ class DataService {
     const user = this.getCurrentUserOrThrow();
 
     if (isSupabaseConfigured && supabase) {
-      let query = supabase.from('attendance_records').select('*').order('date', { ascending: false });
-
-      if (user.role === 'TEACHER') {
-        const { data: assignments } = await supabase
-          .from('teacher_classes')
-          .select('class_id')
-          .eq('teacher_id', user.teacherId || '');
-
-        const assignedIds = (assignments || []).map(a => a.class_id);
-
-        if (filter?.classId) {
-          if (!assignedIds.includes(filter.classId)) {
-            throw new AuthorizationError(
-              `Access denied: Educator "${user.name}" cannot view attendance of unassigned class (${filter.classId}).`
-            );
-          }
-          query = query.eq('class_id', filter.classId);
-        } else {
-          if (assignedIds.length === 0) return [];
-          query = query.in('class_id', assignedIds);
-        }
-      } else if (filter?.classId) {
-        query = query.eq('class_id', filter.classId);
-      }
-
-      if (filter?.date) query = query.eq('date', filter.date);
-      if (filter?.studentId) query = query.eq('student_id', filter.studentId);
-
       try {
+        let query = supabase.from('attendance_records').select('*').order('date', { ascending: false });
+
+        if (user.role === 'TEACHER') {
+          const { data: assignments, error: assignError } = await supabase
+            .from('teacher_classes')
+            .select('class_id')
+            .eq('teacher_id', user.teacherId || '');
+
+          if (assignError) throw assignError;
+
+          const assignedIds = (assignments || []).map(a => a.class_id);
+
+          if (filter?.classId) {
+            if (!assignedIds.includes(filter.classId)) {
+              throw new AuthorizationError(
+                `Access denied: Educator "${user.name}" cannot view attendance of unassigned class (${filter.classId}).`
+              );
+            }
+            query = query.eq('class_id', filter.classId);
+          } else {
+            if (assignedIds.length === 0) return [];
+            query = query.in('class_id', assignedIds);
+          }
+        } else if (filter?.classId) {
+          query = query.eq('class_id', filter.classId);
+        }
+
+        if (filter?.date) query = query.eq('date', filter.date);
+        if (filter?.studentId) query = query.eq('student_id', filter.studentId);
+
         const { data: rawAttendance, error } = await query;
         if (!error && rawAttendance) {
           return rawAttendance.map(r => ({
